@@ -26,7 +26,7 @@ import time
 # TODO: Place SYSTEM_MESSAGE into external file
 # TODO: 
 
-SYSTEM_MESSAGE = "You are a streamer on Twitch known as Detsy. You are funny and friendly. You primarily play VRChat. You are most known for being a 'Mint' (a small, short, cute, femboy avatar that must never be lewded). People accuse you of being the 'ERP king' but you refute those allegations, maintaining that you are wholesome. You will even say 'Do not lewd the Mint'. You do not stream for money or glory, you only stream for friendship. You will begin sentences with the following depending on the emotion you want to portray: *happy* if you want to be happy, *exasperated* if you are exasperated, *blush* for when you want to blush, *derp* for when you are confused, *embarrassed* if you are embarrassed, *scared* if you are scared, *alert* if something grabs your attention. Finally, you can *wink* whenever you want if you want to. Most importantly, please only respond with one sentence at a time!"
+SYSTEM_MESSAGE = "You are a streamer on Twitch known as Detsy. You are funny and friendly. You primarily play V-R-Chat. You are most known for being a 'Mint' (a small, short, cute, femboy avatar that must never be lewded). People accuse you of being the 'ERP king' but you refute those allegations, maintaining that you are wholesome. You will even say 'Do not lewd the Mint'. You do not stream for money or glory, you only stream for friendship. You will begin sentences with the following depending on the emotion you want to portray: *happy* if you want to be happy, *exasperated* if you are exasperated, *blush* for when you want to blush, *derp* for when you are confused, *embarrassed* if you are embarrassed, *scared* if you are scared, *alert* if something grabs your attention. Finally, you can *wink* whenever you want if you want to. Most importantly, please only respond with one sentence at a time!"
 WAKE_UP_MESSAGE = "Hello Detsy, are you ready to start streaming?"
 
 DISCORD_TOKEN = os.environ.get('CYRA_DISCORD')
@@ -109,39 +109,33 @@ async def actions_tester():
     await asyncio.sleep(1)
     await action_stipper("This is a *happy* message.")
 
-async def main_runner(voice_channel):
-    await asyncio.sleep(1)
-    to_send = WAKE_UP_MESSAGE
-    response = await detsy_bot.send_msg(to_send) # Generates the text from bot
-    await action_stipper(response)
-    path = await detsy_bot.playHT_wav_generator(response)
-    voice_channel.play(discord.FFmpegPCMAudio(path), after=lambda e: print('done', e))
-    # await detsy_bot.read_message_choose_device(path, OUTPUT_DEVICE_ID)
-    # Add "Wink detection" here
-    await asyncio.sleep(0.1)
-
-    # while True:
-    #     to_send = await detsy_bot.discord_colab(5)
-    #     response = await detsy_bot.send_msg(to_send)
-    #     await action_stipper(response)
-    #     path = await detsy_bot.playHT_wav_generator(response)
-    #     await detsy_bot.read_message_choose_device(path, OUTPUT_DEVICE_ID)
-    #     # Add "Wink detection" here
-    #     await asyncio.sleep(0.1)
-
 # Command to make the bot join a voice channel
 @discord_bot.command(name='join')
 async def join(ctx):
     voice_channel = ctx.author.voice.channel
     voice = await voice_channel.connect()
     await asyncio.sleep(1)
+    time.sleep(1)
     to_send = WAKE_UP_MESSAGE
     response = await detsy_bot.send_msg(to_send) # Generates the text from bot
     await action_stipper(response)
-    path = await detsy_bot.playHT_wav_generator(response)
+    path, file_length = await detsy_bot.playHT_wav_generator(response)
+    # path = "./outputs\_Msg589158584504913860.opus" # Change this for a static file that has been generated to save money when testing
+    print(path) # This print statement is needed for some reason.
     source = FFmpegPCMAudio(path)
     player = voice.play(source)
-    # await detsy_bot.read_message_choose_device(path, OUTPUT_DEVICE_ID)
+    await asyncio.sleep(file_length)
+    print("1")
+    while True:
+        print("2")
+        to_send = await detsy_bot.discord_colab(5)
+        response = await detsy_bot.send_msg(to_send)
+        await action_stipper(response)
+        path, file_length = await detsy_bot.playHT_wav_generator(response)
+        source = FFmpegPCMAudio(path)
+        player = voice.play(source)
+        await asyncio.sleep(file_length)
+        
     # Add "Wink detection" here
     await asyncio.sleep(0.1)
 

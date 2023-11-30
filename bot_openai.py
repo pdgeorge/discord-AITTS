@@ -68,7 +68,6 @@ async def speech_listener(listen_for):
             print("Could not request speech recognition results; {0}".format(e))
             transcription = "Error"
         while transcription == "Not yet":
-            print("transcription not ready")
             await asyncio.sleep(0.1)
     return transcription
 
@@ -208,7 +207,10 @@ class OpenAI_Bot():
         opus_file = opus_file_path
 
         wav_file.export(opus_file, format="opus", parameters=["-ar", str(wav_file.frame_rate)])
-        return opus_file_path
+        
+        opus_duration = wav_file.duration_seconds
+        
+        return opus_file_path, opus_duration
 
     async def playHT_wav_generator(self, to_generate):
         client = Client(
@@ -226,14 +228,14 @@ class OpenAI_Bot():
             filename = "_Msg" + str(hash(omega_chunk)) + ".wav"
             filepath = await self.turn_to_wav(wavify=omega_chunk, name=filename)
             print("Received from wav, turning to opus: " + filepath)
-            filepath = await self.turn_to_opus(filepath)
+            filepath, file_length = await self.turn_to_opus(filepath)
             print("Received from opus: " + filepath)
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
             client.close()
         client.close()
         print(filepath)
-        return filepath
+        return filepath, file_length
 
 def scan_audio_devices():
     devices = sd.query_devices()
