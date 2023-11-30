@@ -7,6 +7,7 @@ from discord import FFmpegPCMAudio
 from discord.ext import commands
 import speech_recognition as sr
 import time
+import re
 
 # VRChat emotion -> Hotkey to use
 # *happy* -> shift+f1 (default)
@@ -26,21 +27,31 @@ import time
 # TODO: Place SYSTEM_MESSAGE into external file
 # TODO: 
 
-SYSTEM_MESSAGE = "You are a streamer on Twitch known as Detsy. You are funny and friendly. You primarily play V-R-Chat. You are most known for being a 'Mint' (a small, short, cute, femboy avatar that must never be lewded). People accuse you of being the 'ERP king' but you refute those allegations, maintaining that you are wholesome. You will even say 'Do not lewd the Mint'. You do not stream for money or glory, you only stream for friendship. You will begin sentences with the following depending on the emotion you want to portray: *happy* if you want to be happy, *exasperated* if you are exasperated, *blush* for when you want to blush, *derp* for when you are confused, *embarrassed* if you are embarrassed, *scared* if you are scared, *alert* if something grabs your attention. Finally, you can *wink* whenever you want if you want to. Most importantly, please only respond with one sentence at a time!"
+SYSTEM_MESSAGE = "You are a streamer on Twitch known as Detsy. You are funny and friendly. You primarily play V-R-Chat. You are most known for being a 'Mint' (a small, short, cute, femboy avatar that must never be lewded). People accuse you of being the 'E-R-P king' but you refute those allegations, maintaining that you are wholesome. You will even say 'Do not lewd the Mint'. You do not stream for money or glory, you only stream for friendship. You will begin sentences with the following depending on the emotion you want to portray: *happy* if you want to be happy, *exasperated* if you are exasperated, *blush* for when you want to blush, *derp* for when you are confused, *embarrassed* if you are embarrassed, *scared* if you are scared, *alert* if something grabs your attention. Finally, you can *wink* whenever you want if you want to. Most importantly, please only respond with one sentence at a time!"
 WAKE_UP_MESSAGE = "Hello Detsy, are you ready to start streaming?"
 
 DISCORD_TOKEN = os.environ.get('CYRA_DISCORD')
-
-# To find a device name and id, use bot_openai.scan_audio_devices
-OUTPUT_DEVICE_NAME = "CABLE Input (VB-Audio Virtual Cable)"
-OUTPUT_DEVICE_ID = 13
-FFMPEG_PATH = "C:\\ffmpeg\\ffmpeg.exe"
 
 detsy_bot = OpenAI_Bot("Detsy", SYSTEM_MESSAGE)
 
 # Discord bot instance with '!' prefix to commands
 intents = discord.Intents.all()
 discord_bot = commands.Bot(command_prefix='!', intents=intents)
+
+async def wink():
+    await asyncio.sleep(0.1)
+    keyboard.press("left shift")
+    keyboard.press("f5")
+    await asyncio.sleep(0.2)
+    keyboard.release("left shift")
+    keyboard.release("f5")
+    await asyncio.sleep(0.1)
+    keyboard.press("left shift")
+    keyboard.press(detsy_bot.past_emote)
+    await asyncio.sleep(0.1)
+    keyboard.release("left shift")
+    keyboard.release(detsy_bot.past_emote)
+    await asyncio.sleep(0.1)
 
 async def mood(fun_key):
     await asyncio.sleep(0.1)
@@ -51,6 +62,7 @@ async def mood(fun_key):
     keyboard.release("left shift")
     keyboard.release(fun_key)
     await asyncio.sleep(0.1)
+    detsy_bot.past_emote = fun_key
 
 async def listen_to_press():
     recognizer = sr.Recognizer()
@@ -82,12 +94,18 @@ async def action_stipper(msg):
     functions_to_call = []
     print("message received: " + msg)
     words_to_check = {"*happy*": "f1", "*exasperated*": "f2", "*blush*": "f3", "*derp*": "f4", "*wink*": "", "*embarrassed*": "f6", "*scared*": "f7", "*alert*": "f8"}
+    
+    msg = msg.lower()
     for word, fun_key in words_to_check.items():
         if word == "*wink*":
-            pass
-        elif word in msg:
+            print("COMMENCE WINK")
+            detsy_bot.wink_flag = True
+        elif word.lower() in msg:
+            msg = msg.replace(word.lower(), "")
             functions_to_call.append(mood(fun_key))
-    await asyncio.gather(*functions_to_call)
+
+    print("message outgoing from stripper: " + msg)
+    return msg, functions_to_call
 
 async def actions_tester():
     await asyncio.sleep(5)
@@ -118,26 +136,30 @@ async def join(ctx):
     time.sleep(1)
     to_send = WAKE_UP_MESSAGE
     response = await detsy_bot.send_msg(to_send) # Generates the text from bot
-    await action_stipper(response)
+    response, functions_to_call = await action_stipper(response)
     path, file_length = await detsy_bot.playHT_wav_generator(response)
+    await asyncio.gather(*functions_to_call)
     # path = "./outputs\_Msg589158584504913860.opus" # Change this for a static file that has been generated to save money when testing
     print(path) # This print statement is needed for some reason.
     source = FFmpegPCMAudio(path)
     player = voice.play(source)
     await asyncio.sleep(file_length)
-    print("1")
+    if detsy_bot.wink_flag == True:
+        await wink()
     while True:
-        print("2")
-        to_send = await detsy_bot.discord_colab(5)
+        await ctx.send("Listening")
+        to_send = await detsy_bot.discord_colab(5) # Listen to voices in Discord VC, MUST be over a certain volume!
+        await ctx.send("I heard:")
+        await ctx.send(to_send)
         response = await detsy_bot.send_msg(to_send)
-        await action_stipper(response)
+        response, functions_to_call = await action_stipper(response)
         path, file_length = await detsy_bot.playHT_wav_generator(response)
+        await asyncio.gather(*functions_to_call)
         source = FFmpegPCMAudio(path)
         player = voice.play(source)
         await asyncio.sleep(file_length)
-        
-    # Add "Wink detection" here
-    await asyncio.sleep(0.1)
+        if detsy_bot.wink_flag == True:
+            await wink()
 
 # Event to print a message when the bot is ready
 @discord_bot.event
