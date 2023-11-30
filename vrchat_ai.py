@@ -3,6 +3,7 @@ import asyncio
 from bot_openai import OpenAI_Bot
 import os
 import discord
+from discord import FFmpegPCMAudio
 from discord.ext import commands
 import speech_recognition as sr
 import time
@@ -33,6 +34,7 @@ DISCORD_TOKEN = os.environ.get('CYRA_DISCORD')
 # To find a device name and id, use bot_openai.scan_audio_devices
 OUTPUT_DEVICE_NAME = "CABLE Input (VB-Audio Virtual Cable)"
 OUTPUT_DEVICE_ID = 13
+FFMPEG_PATH = "C:\\ffmpeg\\ffmpeg.exe"
 
 detsy_bot = OpenAI_Bot("Detsy", SYSTEM_MESSAGE)
 
@@ -107,31 +109,41 @@ async def actions_tester():
     await asyncio.sleep(1)
     await action_stipper("This is a *happy* message.")
 
-async def main_runner():
+async def main_runner(voice_channel):
     await asyncio.sleep(1)
     to_send = WAKE_UP_MESSAGE
     response = await detsy_bot.send_msg(to_send) # Generates the text from bot
     await action_stipper(response)
     path = await detsy_bot.playHT_wav_generator(response)
-    await detsy_bot.read_message_choose_device(path, OUTPUT_DEVICE_ID)
+    voice_channel.play(discord.FFmpegPCMAudio(path), after=lambda e: print('done', e))
+    # await detsy_bot.read_message_choose_device(path, OUTPUT_DEVICE_ID)
     # Add "Wink detection" here
     await asyncio.sleep(0.1)
 
-    while True:
-        to_send = await detsy_bot.discord_colab(5)
-        response = await detsy_bot.send_msg(to_send)
-        await action_stipper(response)
-        path = await detsy_bot.playHT_wav_generator(response)
-        await detsy_bot.read_message_choose_device(path, OUTPUT_DEVICE_ID)
-        # Add "Wink detection" here
-        await asyncio.sleep(0.1)
+    # while True:
+    #     to_send = await detsy_bot.discord_colab(5)
+    #     response = await detsy_bot.send_msg(to_send)
+    #     await action_stipper(response)
+    #     path = await detsy_bot.playHT_wav_generator(response)
+    #     await detsy_bot.read_message_choose_device(path, OUTPUT_DEVICE_ID)
+    #     # Add "Wink detection" here
+    #     await asyncio.sleep(0.1)
 
 # Command to make the bot join a voice channel
 @discord_bot.command(name='join')
 async def join(ctx):
-    channel = ctx.author.voice.channel
-    await channel.connect()
-    await main_runner()
+    voice_channel = ctx.author.voice.channel
+    voice = await voice_channel.connect()
+    await asyncio.sleep(1)
+    to_send = WAKE_UP_MESSAGE
+    response = await detsy_bot.send_msg(to_send) # Generates the text from bot
+    await action_stipper(response)
+    path = await detsy_bot.playHT_wav_generator(response)
+    source = FFmpegPCMAudio(path)
+    player = voice.play(source)
+    # await detsy_bot.read_message_choose_device(path, OUTPUT_DEVICE_ID)
+    # Add "Wink detection" here
+    await asyncio.sleep(0.1)
 
 # Event to print a message when the bot is ready
 @discord_bot.event
@@ -148,9 +160,12 @@ async def disconnect(ctx):
     
     if voice_channel:
         await voice_channel.disconnect()
+        await ctx.guild.voice_client.disconnect()
         await ctx.send("Disconnected from the voice channel.")
     else:
         await ctx.send("I am not currently in a voice channel.")
+
+
 
 async def main():
     print("async main")

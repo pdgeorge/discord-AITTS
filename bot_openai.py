@@ -11,6 +11,7 @@ from pyht.client import TTSOptions
 import wave
 from scipy.io import wavfile
 import sounddevice as sd
+from pydub import AudioSegment
 
 TEXT_DIR = ""
 TTS_DIR = "./outputs/"
@@ -196,6 +197,19 @@ class OpenAI_Bot():
         print("ttw file_name: "+file_name)
         return file_name
 
+    async def turn_to_opus(self, path_to_mp3ify):
+
+        wav_file = AudioSegment.from_file(path_to_mp3ify, format="wav")
+
+        # Generate new filename based on old name
+        output_dir = os.path.dirname(path_to_mp3ify)
+        output_name = os.path.splitext(os.path.basename(path_to_mp3ify))[0]
+        opus_file_path = os.path.join(output_dir, f"{output_name}.opus")
+        opus_file = opus_file_path
+
+        wav_file.export(opus_file, format="opus", parameters=["-ar", str(wav_file.frame_rate)])
+        return opus_file_path
+
     async def playHT_wav_generator(self, to_generate):
         client = Client(
             user_id=USER_ID,
@@ -211,6 +225,9 @@ class OpenAI_Bot():
                 omega_chunk += chunk
             filename = "_Msg" + str(hash(omega_chunk)) + ".wav"
             filepath = await self.turn_to_wav(wavify=omega_chunk, name=filename)
+            print("Received from wav, turning to opus: " + filepath)
+            filepath = await self.turn_to_opus(filepath)
+            print("Received from opus: " + filepath)
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
             client.close()
@@ -231,7 +248,7 @@ async def testing_main():
 
     path = await test_bot.playHT_wav_generator("I am Detsy!")
     # path = "C:\development\VRChatAI\_Msg-1823043863420221505.wav"
-    await test_bot.read_message_choose_device(path, 13)
+    await test_bot.read_message(path)
     print("Done playing")
     # scan_audio_devices()
     # await test_bot.load_from_file("TAI_Test.txt")
