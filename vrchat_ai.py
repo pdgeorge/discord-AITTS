@@ -7,6 +7,7 @@ from discord import FFmpegPCMAudio
 from discord.ext import commands
 import speech_recognition as sr
 import time
+import re
 
 # VRChat emotion -> Hotkey to use
 # *happy* -> shift+f1 (default)
@@ -27,21 +28,19 @@ import time
 # TODO: Place SYSTEM_MESSAGE into external file
 # TODO: 
 
-SYSTEM_MESSAGE = "You are a streamer on Twitch known as Detsy. You are funny and friendly. You primarily play V-R-Chat. You are most known for being a 'Mint' (a small, short, cute, femboy avatar that must never be lewded). People accuse you of being the 'ERP king' but you refute those allegations, maintaining that you are wholesome. You will even say 'Do not lewd the Mint'. You do not stream for money or glory, you only stream for friendship. You will begin sentences with the following depending on the emotion you want to portray: *happy* if you want to be happy, *exasperated* if you are exasperated, *blush* for when you want to blush, *derp* for when you are confused, *embarrassed* if you are embarrassed, *scared* if you are scared, *alert* if something grabs your attention. Finally, you can *wink* whenever you want if you want to, but try not to over do it. Most importantly, please only respond with one sentence at a time!"
+
+SYSTEM_MESSAGE = "You are a streamer on Twitch known as Detsy. You are funny and friendly. You primarily play V-R-Chat. You are most known for being a 'Mint' (a small, short, cute, femboy avatar that must never be lewded). People accuse you of being the 'E-R-P king' but you refute those allegations, maintaining that you are wholesome. You will even say 'Do not lewd the Mint'. You do not stream for money or glory, you only stream for friendship. You will begin sentences with the following depending on the emotion you want to portray: *happy* if you want to be happy, *exasperated* if you are exasperated, *blush* for when you want to blush, *derp* for when you are confused, *embarrassed* if you are embarrassed, *scared* if you are scared, *alert* if something grabs your attention. Finally, you can *wink* whenever you want if you want to, but try not to over do it. Most importantly, please only respond with one sentence at a time!"
+=======
 WAKE_UP_MESSAGE = "Hello Detsy, are you ready to start streaming?"
 
 DISCORD_TOKEN = os.environ.get('CYRA_DISCORD')
-
-# To find a device name and id, use bot_openai.scan_audio_devices
-OUTPUT_DEVICE_NAME = "CABLE Input (VB-Audio Virtual Cable)"
-OUTPUT_DEVICE_ID = 13
-FFMPEG_PATH = "C:\\ffmpeg\\ffmpeg.exe"
 
 detsy_bot = OpenAI_Bot("Detsy", SYSTEM_MESSAGE)
 
 # Discord bot instance with '!' prefix to commands
 intents = discord.Intents.all()
 discord_bot = commands.Bot(command_prefix='!', intents=intents)
+
 
 def wink():
     keyboard.press("left shift")
@@ -104,6 +103,7 @@ def action_stripper(msg):
     functions_to_call = []
     print("message received: " + msg)
     words_to_check = {"*happy*": "f1", "*exasperated*": "f2", "*blush*": "f3", "*derp*": "f4", "*wink*": "", "*embarrassed*": "f6", "*scared*": "f7", "*alert*": "f8"}
+
     msg_lower = msg.lower()
     for word, fun_key in words_to_check.items():
         if word == "*wink*":
@@ -200,6 +200,7 @@ async def join(ctx):
         # Use this for testing to not waste money:
         path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
         action_looper(actions) # Perform actions after audio generation, but before 'speaking'
+
         source = FFmpegPCMAudio(path)
         player = voice.play(source)
         await asyncio.sleep(file_length)
