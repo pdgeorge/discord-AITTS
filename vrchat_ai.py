@@ -21,6 +21,7 @@ import time
 # {"*happy*": "f1", "*exasperated*": "f2", "*blush*": "f3", "*derp*": "f4", "*wink*": "f5", "*embarrassed*": "f6", "*scared*": "f7", "*alert*": "f8"}
 
 # TODO: Strip *action* out of text during action_stripper
+# ^^ !DONE! ^^
 # TODO: Add Wink Detection (If wink, add wink_flag to bot. Have a wink_flag checker that will *wink* if wink_flag == True)
 # TODO: Add protections to only allow certain people to use commands
 # TODO: Place SYSTEM_MESSAGE into external file
@@ -42,15 +43,35 @@ detsy_bot = OpenAI_Bot("Detsy", SYSTEM_MESSAGE)
 intents = discord.Intents.all()
 discord_bot = commands.Bot(command_prefix='!', intents=intents)
 
-async def mood(fun_key):
-    await asyncio.sleep(0.1)
+def wink():
+    keyboard.press("left shift")
+    keyboard.press("f5")
+    time.sleep(0.1)
+    keyboard.release("left shift")
+    keyboard.release("f5")
+    time.sleep(1)
+    keyboard.press("left shift")
+    keyboard.press(detsy_bot.last_emote)
+    time.sleep(0.1)
+    keyboard.release("left shift")
+    keyboard.release(detsy_bot.last_emote)
+    time.sleep(0.1)
+    
+
+def mood(fun_key):
+    time.sleep(0.1)
+    detsy_bot.last_emote = fun_key
     print(fun_key)
     keyboard.press("left shift")
     keyboard.press(fun_key)
-    await asyncio.sleep(0.1)
+    time.sleep(0.1)
     keyboard.release("left shift")
     keyboard.release(fun_key)
-    await asyncio.sleep(0.1)
+    time.sleep(0.1)
+
+def action_looper(action_list):
+    for action in action_list:
+        action()
 
 async def listen_to_press():
     recognizer = sr.Recognizer()
@@ -78,36 +99,59 @@ async def listen_to_press():
             except sr.RequestError as e:
                 print(f"Error making the request; {e}")
 
-async def action_stipper(msg):
+def action_stipper(msg):
     functions_to_call = []
     print("message received: " + msg)
     words_to_check = {"*happy*": "f1", "*exasperated*": "f2", "*blush*": "f3", "*derp*": "f4", "*wink*": "", "*embarrassed*": "f6", "*scared*": "f7", "*alert*": "f8"}
+    msg_lower = msg.lower()
     for word, fun_key in words_to_check.items():
         if word == "*wink*":
+            detsy_bot.wink_flag = True
             pass
-        elif word in msg:
-            functions_to_call.append(mood(fun_key))
-    await asyncio.gather(*functions_to_call)
+        elif word.lower() in msg_lower:
+            msg_lower = msg_lower.replace(word.lower(), "")
+            print("word: ",word.lower()," fun_key: ",fun_key)
+            mood_lambda = lambda key=fun_key: mood(fun_key=key)
+            functions_to_call.append(mood_lambda)
+    return msg_lower, functions_to_call
 
-async def actions_tester():
-    await asyncio.sleep(5)
-    await action_stipper("This is a *happy* message.")
-    await asyncio.sleep(1)
-    await action_stipper("This is a *exasperated* message.")
-    await asyncio.sleep(1)
-    await action_stipper("This is a *blush* message.")
-    await asyncio.sleep(1)
-    await action_stipper("This is a *derp* message.")
-    await asyncio.sleep(1)
-    await action_stipper("This is a *wink* message.")
-    await asyncio.sleep(1)
-    await action_stipper("This is a *embarrassed* message.")
-    await asyncio.sleep(1)
-    await action_stipper("This is a *scared* message.")
-    await asyncio.sleep(1)
-    await action_stipper("This is a *alert* message.")
-    await asyncio.sleep(1)
-    await action_stipper("This is a *happy* message.")
+def actions_tester():
+    time.sleep(5)
+    response, actions = action_stipper("*happy* I am happy to see you")
+    print(response)
+    action_looper(actions)
+    time.sleep(1)
+    response, actions = action_stipper("*exasperated* I am exasperated!")
+    print(response)
+    action_looper(actions)
+    time.sleep(1)
+    response, actions = action_stipper("*blush* UwU do not lewd the mint.")
+    print(response)
+    action_looper(actions)
+    time.sleep(1)
+    response, actions = action_stipper("*derp* What did you say?")
+    print(response)
+    action_looper(actions)
+    time.sleep(1)
+    response, actions = action_stipper("*wink* I think you are cute.")
+    print(response)
+    action_looper(actions)
+    time.sleep(1)
+    response, actions = action_stipper("*embarrassed* I am a little shy.")
+    print(response)
+    action_looper(actions)
+    time.sleep(1)
+    response, actions = action_stipper("*scared* Ahhhhh")
+    print(response)
+    action_looper(actions)
+    time.sleep(1)
+    response, actions = action_stipper("*alert* I am watching you.")
+    print(response)
+    action_looper(actions)
+    time.sleep(1)
+    response, actions = action_stipper("*happy* I am happy to see you")
+    print(response)
+    action_looper(actions)
 
 # Command to make the bot join a voice channel
 @discord_bot.command(name='join')
@@ -115,29 +159,76 @@ async def join(ctx):
     voice_channel = ctx.author.voice.channel
     voice = await voice_channel.connect()
     await asyncio.sleep(1)
-    time.sleep(1)
+    time.sleep(0.1)
     to_send = WAKE_UP_MESSAGE
-    response = await detsy_bot.send_msg(to_send) # Generates the text from bot
-    await action_stipper(response)
-    path, file_length = await detsy_bot.playHT_wav_generator(response)
-    # path = "./outputs\_Msg589158584504913860.opus" # Change this for a static file that has been generated to save money when testing
-    print(path) # This print statement is needed for some reason.
+    
+    # Generates the text from bot
+    response = await detsy_bot.send_msg(to_send)
+
+    # Strips any actions to do, then does the actions
+    response, actions = action_stipper(response)
+    print(response)
+
+    # Generates audio file, then speaks the audio file through Discord channel
+    # path, file_length = await detsy_bot.playHT_wav_generator(response)
+    # Use this for testing to not waste money:
+    path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
+    action_looper(actions) # Perform actions after audio generation, but before 'speaking'
     source = FFmpegPCMAudio(path)
     player = voice.play(source)
     await asyncio.sleep(file_length)
-    print("1")
+    if detsy_bot.wink_flag == True:
+        mood("f5")
+        detsy_bot.wink_flag = False
+
+    # To see what tasks are currently stuck
+    tasks = asyncio.all_tasks()
+    print("Pending tasks:", len(tasks))
+    for task in tasks:
+        print(f"Task: {task}, Coroutine: {task.get_coro()}")
+    
+    # Just to exit before the "while True"
+    # print("Exiting")
+    # exit()
+
     while True:
-        print("2")
+        # Listen to Audio input, then send it to bot to generate text
         to_send = await detsy_bot.discord_colab(5)
         response = await detsy_bot.send_msg(to_send)
-        await action_stipper(response)
-        path, file_length = await detsy_bot.playHT_wav_generator(response)
+
+        # Strips any actions to do, then does the actions
+        response, actions = action_stipper(response)
+        print(response)
+
+        # Generates audio file, then speaks the audio file through Discord channel
+        # path, file_length = await detsy_bot.playHT_wav_generator(response)
+        # Use this for testing to not waste money:
+        path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
+        action_looper(actions) # Perform actions after audio generation, but before 'speaking'
         source = FFmpegPCMAudio(path)
         player = voice.play(source)
         await asyncio.sleep(file_length)
-        
-    # Add "Wink detection" here
-    await asyncio.sleep(0.1)
+        if detsy_bot.wink_flag == True:
+            mood("f5")
+            detsy_bot.wink_flag = False
+
+        # To see what tasks are currently stuck
+        tasks = asyncio.all_tasks()
+        print("Pending tasks:", len(tasks))
+        for task in tasks:
+            print(f"Task: {task}, Coroutine: {task.get_coro()}")
+
+        # await action_stipper(response)
+        # # path, file_length = await detsy_bot.playHT_wav_generator(response)
+        # # Use this for testing to not waste money:
+        # path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
+        # print(path) # This print statement is needed for some reason.
+        # source = FFmpegPCMAudio(path)
+        # player = voice.play(source)
+        # await asyncio.sleep(file_length)
+        # source = FFmpegPCMAudio(path)
+        # player = voice.play(source)
+        # await asyncio.sleep(file_length)
 
 # Event to print a message when the bot is ready
 @discord_bot.event
@@ -159,7 +250,15 @@ async def disconnect(ctx):
     else:
         await ctx.send("I am not currently in a voice channel.")
 
-
+# Command to make the bot join a voice channel
+@discord_bot.command(name='emoteTest')
+async def emoteTest(ctx):
+    await actions_tester()
+    # To see what tasks are currently stuck
+    tasks = asyncio.all_tasks()
+    print("Pending tasks:", len(tasks))
+    for task in tasks:
+        print(f"Task: {task}, Coroutine: {task.get_coro()}")
 
 async def main():
     print("async main")

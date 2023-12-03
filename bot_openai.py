@@ -76,6 +76,8 @@ class OpenAI_Bot():
         self.chat_history = []
         self.bot_name = bot_name
         self.voice = """s3://voice-cloning-zero-shot/900b9c8f-d12e-46b5-acc2-3d60b56351d9/detsyvr/manifest.json"""
+        self.wink_flag = False
+        self.last_emote = "f1"
 
         self.start_datetime = datetime.datetime.now()
         formatted_datetime = self.start_datetime.strftime("%Y-%m-%d_%H-%M-%S")
@@ -153,6 +155,7 @@ class OpenAI_Bot():
 
         return msg_file_path
     
+    # Starts playing through default audio channel using VLC
     async def read_message(self, msg_file_path):
         # Start playing!
         p = vlc.MediaPlayer(msg_file_path)
@@ -165,13 +168,14 @@ class OpenAI_Bot():
         duration = p.get_length() / 1000
         await asyncio.sleep(duration)
 
+    # Allows you to choose which audio channel to output to using device_id
     async def read_message_choose_device(self, msg_file_path, device_id):
         sample_rate, data = wavfile.read(msg_file_path)
 
         sd.play(data, sample_rate, device=device_id)
         sd.wait()
 
-    # Called when colabing via Discord
+    # Listens to the audio input when connected in Discord
     async def discord_colab(self, listen_for):
         heard_msg = await speech_listener(listen_for)
         print("heard_msg is: "+heard_msg)
