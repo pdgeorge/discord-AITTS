@@ -22,12 +22,15 @@ import re
 # {"*happy*": "f1", "*exasperated*": "f2", "*blush*": "f3", "*derp*": "f4", "*wink*": "f5", "*embarrassed*": "f6", "*scared*": "f7", "*alert*": "f8"}
 
 # TODO: Strip *action* out of text during action_stripper
+# ^^ !DONE! ^^
 # TODO: Add Wink Detection (If wink, add wink_flag to bot. Have a wink_flag checker that will *wink* if wink_flag == True)
 # TODO: Add protections to only allow certain people to use commands
 # TODO: Place SYSTEM_MESSAGE into external file
 # TODO: 
 
-SYSTEM_MESSAGE = "You are a streamer on Twitch known as Detsy. You are funny and friendly. You primarily play V-R-Chat. You are most known for being a 'Mint' (a small, short, cute, femboy avatar that must never be lewded). People accuse you of being the 'E-R-P king' but you refute those allegations, maintaining that you are wholesome. You will even say 'Do not lewd the Mint'. You do not stream for money or glory, you only stream for friendship. You will begin sentences with the following depending on the emotion you want to portray: *happy* if you want to be happy, *exasperated* if you are exasperated, *blush* for when you want to blush, *derp* for when you are confused, *embarrassed* if you are embarrassed, *scared* if you are scared, *alert* if something grabs your attention. Finally, you can *wink* whenever you want if you want to. Most importantly, please only respond with one sentence at a time!"
+
+SYSTEM_MESSAGE = "You are a streamer on Twitch known as Detsy. You are funny and friendly. You primarily play V-R-Chat. You are most known for being a 'Mint' (a small, short, cute, femboy avatar that must never be lewded). People accuse you of being the 'E-R-P king' but you refute those allegations, maintaining that you are wholesome. You will even say 'Do not lewd the Mint'. You do not stream for money or glory, you only stream for friendship. You will begin sentences with the following depending on the emotion you want to portray: *happy* if you want to be happy, *exasperated* if you are exasperated, *blush* for when you want to blush, *derp* for when you are confused, *embarrassed* if you are embarrassed, *scared* if you are scared, *alert* if something grabs your attention. Finally, you can *wink* whenever you want if you want to, but try not to over do it. Most importantly, please only respond with one sentence at a time!"
+=======
 WAKE_UP_MESSAGE = "Hello Detsy, are you ready to start streaming?"
 
 DISCORD_TOKEN = os.environ.get('CYRA_DISCORD')
@@ -38,31 +41,37 @@ detsy_bot = OpenAI_Bot("Detsy", SYSTEM_MESSAGE)
 intents = discord.Intents.all()
 discord_bot = commands.Bot(command_prefix='!', intents=intents)
 
-async def wink():
-    await asyncio.sleep(0.1)
+
+def wink():
     keyboard.press("left shift")
     keyboard.press("f5")
-    await asyncio.sleep(0.2)
+    time.sleep(0.1)
     keyboard.release("left shift")
     keyboard.release("f5")
-    await asyncio.sleep(0.1)
+    time.sleep(1)
     keyboard.press("left shift")
-    keyboard.press(detsy_bot.past_emote)
-    await asyncio.sleep(0.1)
+    keyboard.press(detsy_bot.last_emote)
+    time.sleep(0.1)
     keyboard.release("left shift")
-    keyboard.release(detsy_bot.past_emote)
-    await asyncio.sleep(0.1)
+    keyboard.release(detsy_bot.last_emote)
+    time.sleep(0.1)
+    
 
-async def mood(fun_key):
-    await asyncio.sleep(0.1)
+def mood(fun_key):
     print(fun_key)
+    time.sleep(0.1)
+    detsy_bot.last_emote = fun_key
     keyboard.press("left shift")
     keyboard.press(fun_key)
-    await asyncio.sleep(0.1)
+    time.sleep(0.1)
     keyboard.release("left shift")
     keyboard.release(fun_key)
-    await asyncio.sleep(0.1)
-    detsy_bot.past_emote = fun_key
+    time.sleep(0.1)
+
+def action_looper(action_list):
+    print("Inside action_looper")
+    for action in action_list:
+        action()
 
 async def listen_to_press():
     recognizer = sr.Recognizer()
@@ -90,42 +99,60 @@ async def listen_to_press():
             except sr.RequestError as e:
                 print(f"Error making the request; {e}")
 
-async def action_stipper(msg):
+def action_stripper(msg):
     functions_to_call = []
     print("message received: " + msg)
     words_to_check = {"*happy*": "f1", "*exasperated*": "f2", "*blush*": "f3", "*derp*": "f4", "*wink*": "", "*embarrassed*": "f6", "*scared*": "f7", "*alert*": "f8"}
-    
-    msg = msg.lower()
+
+    msg_lower = msg.lower()
     for word, fun_key in words_to_check.items():
         if word == "*wink*":
-            print("COMMENCE WINK")
             detsy_bot.wink_flag = True
-        elif word.lower() in msg:
-            msg = msg.replace(word.lower(), "")
-            functions_to_call.append(mood(fun_key))
+            pass
+        elif word.lower() in msg_lower:
+            msg_lower = msg_lower.replace(word.lower(), "")
+            mood_lambda = lambda key=fun_key: mood(fun_key=key)
+            functions_to_call.append(mood_lambda)
+        msg_lower = msg_lower.replace(word.lower(), "")
+    return msg_lower, functions_to_call
 
-    print("message outgoing from stripper: " + msg)
-    return msg, functions_to_call
-
-async def actions_tester():
-    await asyncio.sleep(5)
-    await action_stipper("This is a *happy* message.")
-    await asyncio.sleep(1)
-    await action_stipper("This is a *exasperated* message.")
-    await asyncio.sleep(1)
-    await action_stipper("This is a *blush* message.")
-    await asyncio.sleep(1)
-    await action_stipper("This is a *derp* message.")
-    await asyncio.sleep(1)
-    await action_stipper("This is a *wink* message.")
-    await asyncio.sleep(1)
-    await action_stipper("This is a *embarrassed* message.")
-    await asyncio.sleep(1)
-    await action_stipper("This is a *scared* message.")
-    await asyncio.sleep(1)
-    await action_stipper("This is a *alert* message.")
-    await asyncio.sleep(1)
-    await action_stipper("This is a *happy* message.")
+def actions_tester():
+    time.sleep(5)
+    response, actions = action_stripper("*happy* I am happy to see you")
+    print(response)
+    action_looper(actions)
+    time.sleep(1)
+    response, actions = action_stripper("*exasperated* I am exasperated!")
+    print(response)
+    action_looper(actions)
+    time.sleep(1)
+    response, actions = action_stripper("*blush* UwU do not lewd the mint.")
+    print(response)
+    action_looper(actions)
+    time.sleep(1)
+    response, actions = action_stripper("*derp* What did you say?")
+    print(response)
+    action_looper(actions)
+    time.sleep(1)
+    response, actions = action_stripper("*wink* I think you are cute.")
+    print(response)
+    action_looper(actions)
+    time.sleep(1)
+    response, actions = action_stripper("*embarrassed* I am a little shy.")
+    print(response)
+    action_looper(actions)
+    time.sleep(1)
+    response, actions = action_stripper("*scared* Ahhhhh")
+    print(response)
+    action_looper(actions)
+    time.sleep(1)
+    response, actions = action_stripper("*alert* I am watching you.")
+    print(response)
+    action_looper(actions)
+    time.sleep(1)
+    response, actions = action_stripper("*happy* I am happy to see you")
+    print(response)
+    action_looper(actions)
 
 # Command to make the bot join a voice channel
 @discord_bot.command(name='join')
@@ -133,33 +160,54 @@ async def join(ctx):
     voice_channel = ctx.author.voice.channel
     voice = await voice_channel.connect()
     await asyncio.sleep(1)
-    time.sleep(1)
+    time.sleep(0.1)
     to_send = WAKE_UP_MESSAGE
-    response = await detsy_bot.send_msg(to_send) # Generates the text from bot
-    response, functions_to_call = await action_stipper(response)
-    path, file_length = await detsy_bot.playHT_wav_generator(response)
-    await asyncio.gather(*functions_to_call)
-    # path = "./outputs\_Msg589158584504913860.opus" # Change this for a static file that has been generated to save money when testing
-    print(path) # This print statement is needed for some reason.
+    
+    # Generates the text from bot
+    response = await detsy_bot.send_msg(to_send)
+
+    # Strips any actions to do, then does the actions
+    response, actions = action_stripper(response)
+    print("response: " + response)
+
+    # Generates audio file, then speaks the audio file through Discord channel
+    # path, file_length = await detsy_bot.playHT_wav_generator(response)
+    # Use this for testing to not waste money:
+    path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
+    action_looper(actions) # Perform actions after audio generation, but before 'speaking'
     source = FFmpegPCMAudio(path)
     player = voice.play(source)
     await asyncio.sleep(file_length)
     if detsy_bot.wink_flag == True:
-        await wink()
+        wink()
+        detsy_bot.wink_flag = False
+
+    source.cleanup()
     while True:
-        await ctx.send("Listening")
-        to_send = await detsy_bot.discord_colab(5) # Listen to voices in Discord VC, MUST be over a certain volume!
-        await ctx.send("I heard:")
-        await ctx.send(to_send)
+        # Listen to Audio input, then send it to bot to generate text
+        to_send = detsy_bot.discord_colab(5)
+        ctx_to_send = "I heard: " + to_send
+        await ctx.send(ctx_to_send)
+        
         response = await detsy_bot.send_msg(to_send)
-        response, functions_to_call = await action_stipper(response)
-        path, file_length = await detsy_bot.playHT_wav_generator(response)
-        await asyncio.gather(*functions_to_call)
+
+        # Strips any actions to do, then does the actions
+        response, actions = action_stripper(response)
+        print("response: " + response)
+
+        # Generates audio file, then speaks the audio file through Discord channel
+        # path, file_length = await detsy_bot.playHT_wav_generator(response)
+        # Use this for testing to not waste money:
+        path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
+        action_looper(actions) # Perform actions after audio generation, but before 'speaking'
+
         source = FFmpegPCMAudio(path)
         player = voice.play(source)
         await asyncio.sleep(file_length)
         if detsy_bot.wink_flag == True:
-            await wink()
+            wink()
+            detsy_bot.wink_flag = False
+        source.cleanup()
 
 # Event to print a message when the bot is ready
 @discord_bot.event
@@ -181,7 +229,16 @@ async def disconnect(ctx):
     else:
         await ctx.send("I am not currently in a voice channel.")
 
+# Command to make the bot join a voice channel
+@discord_bot.command(name='emoteTest')
+async def emoteTest(ctx):
+    actions_tester()
 
+
+# Command to make the bot join a voice channel
+@discord_bot.command(name='load')
+async def load(ctx):
+    detsy_bot.load_from_file(detsy_bot.bot_file)
 
 async def main():
     print("async main")
@@ -191,6 +248,3 @@ async def main():
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main())
-
-    # response_path = await detsy_bot.save_message_two(response, 225) # Creates robo TTS
-    # await detsy_bot.read_message_three(response_path, OUTPUT_DEVICE) # Sends TTS to RVC
