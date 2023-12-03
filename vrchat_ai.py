@@ -178,7 +178,7 @@ async def join(ctx):
     player = voice.play(source)
     await asyncio.sleep(file_length)
     if detsy_bot.wink_flag == True:
-        mood("f5")
+        wink()
         detsy_bot.wink_flag = False
 
     # To see what tasks are currently stuck
@@ -186,10 +186,6 @@ async def join(ctx):
     print("Pending tasks:", len(tasks))
     for task in tasks:
         print(f"Task: {task}, Coroutine: {task.get_coro()}")
-    
-    # Just to exit before the "while True"
-    # print("Exiting")
-    # exit()
 
     while True:
         # Listen to Audio input, then send it to bot to generate text
@@ -209,7 +205,7 @@ async def join(ctx):
         player = voice.play(source)
         await asyncio.sleep(file_length)
         if detsy_bot.wink_flag == True:
-            mood("f5")
+            wink()
             detsy_bot.wink_flag = False
 
         # To see what tasks are currently stuck
@@ -217,18 +213,6 @@ async def join(ctx):
         print("Pending tasks:", len(tasks))
         for task in tasks:
             print(f"Task: {task}, Coroutine: {task.get_coro()}")
-
-        # await action_stipper(response)
-        # # path, file_length = await detsy_bot.playHT_wav_generator(response)
-        # # Use this for testing to not waste money:
-        # path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
-        # print(path) # This print statement is needed for some reason.
-        # source = FFmpegPCMAudio(path)
-        # player = voice.play(source)
-        # await asyncio.sleep(file_length)
-        # source = FFmpegPCMAudio(path)
-        # player = voice.play(source)
-        # await asyncio.sleep(file_length)
 
 # Event to print a message when the bot is ready
 @discord_bot.event
@@ -253,7 +237,7 @@ async def disconnect(ctx):
 # Command to make the bot join a voice channel
 @discord_bot.command(name='emoteTest')
 async def emoteTest(ctx):
-    await actions_tester()
+    actions_tester()
     # To see what tasks are currently stuck
     tasks = asyncio.all_tasks()
     print("Pending tasks:", len(tasks))

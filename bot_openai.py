@@ -181,7 +181,7 @@ class OpenAI_Bot():
         print("heard_msg is: "+heard_msg)
         return heard_msg
 
-    async def turn_to_wav(self, wavify, name):
+    def turn_to_wav(self, wavify, name):
         sample_width = 2
         channels = 1
         sample_rate=24000 
@@ -200,7 +200,7 @@ class OpenAI_Bot():
         print("ttw file_name: "+file_name)
         return file_name
 
-    async def turn_to_opus(self, path_to_mp3ify):
+    def turn_to_opus(self, path_to_mp3ify):
 
         wav_file = AudioSegment.from_file(path_to_mp3ify, format="wav")
 
@@ -230,9 +230,9 @@ class OpenAI_Bot():
                     continue
                 omega_chunk += chunk
             filename = "_Msg" + str(hash(omega_chunk)) + ".wav"
-            filepath = await self.turn_to_wav(wavify=omega_chunk, name=filename)
+            filepath = self.turn_to_wav(wavify=omega_chunk, name=filename)
             print("Received from wav, turning to opus: " + filepath)
-            filepath, file_length = await self.turn_to_opus(filepath)
+            filepath, file_length = self.turn_to_opus(filepath)
             print("Received from opus: " + filepath)
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
