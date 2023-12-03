@@ -55,25 +55,21 @@ async def speech_listener_async(listen_for):
     r = sr.Recognizer()
     transcription = "Not yet"
     error_checker = True
-    while error_checker:
-        with sr.Microphone() as source:
-            print("Recording started")
-            try:
-                audio = r.listen(source, timeout=listen_for)  # Capture the audio input
-            except sr.WaitTimeoutError:
-                print(f"No speech detected before {listen_for} seconds.")
-                return "" # No audio recorded, no string to transcribe, no string to return
+    with sr.Microphone() as source:
+        print("Recording started")
         try:
-            transcription = r.recognize_whisper(audio, language="english", model="base.en")  # Perform the speech-to-text transcription
-            error_checker = False
-        except sr.UnknownValueError:
-            print("Speech recognition could not understand audio")
-            transcription = "Error"
-        except sr.RequestError as e:
-            print("Could not request speech recognition results; {0}".format(e))
-            transcription = "Error"
-        while transcription == "Not yet":
-            await asyncio.sleep(0.1)
+            audio = r.listen(source, timeout=listen_for, phrase_time_limit=listen_for)  # Capture the audio input
+        except sr.WaitTimeoutError:
+            print(f"No speech detected before {listen_for} seconds.")
+            return "" # No audio recorded, no string to transcribe, no string to return
+    try:
+        transcription = r.recognize_whisper(audio, language="english", model="base.en")  # Perform the speech-to-text transcription
+    except sr.UnknownValueError:
+        print("Speech recognition could not understand audio")
+        transcription = "Error"
+    except sr.RequestError as e:
+        print("Could not request speech recognition results; {0}".format(e))
+        transcription = "Error"
     return transcription
 
 def speech_listener(listen_for):

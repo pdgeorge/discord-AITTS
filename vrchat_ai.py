@@ -68,7 +68,6 @@ def mood(fun_key):
     keyboard.release("left shift")
     keyboard.release(fun_key)
     time.sleep(0.1)
-    print(fun_key)
 
 def action_looper(action_list):
     print("Inside action_looper")
@@ -169,7 +168,7 @@ async def join(ctx):
 
     # Strips any actions to do, then does the actions
     response, actions = action_stripper(response)
-    print(response)
+    print("response: " + response)
 
     # Generates audio file, then speaks the audio file through Discord channel
     # path, file_length = await detsy_bot.playHT_wav_generator(response)
@@ -179,34 +178,28 @@ async def join(ctx):
     source = FFmpegPCMAudio(path)
     player = voice.play(source)
     await asyncio.sleep(file_length)
-    print("post sleep?")
     if detsy_bot.wink_flag == True:
         wink()
         detsy_bot.wink_flag = False
-    print("Post wink1?!!?")
-
-    # To see what tasks are currently stuck
-    tasks = asyncio.all_tasks()
-    print("Pending tasks:", len(tasks))
-    for task in tasks:
-        print(f"Task: {task}, Coroutine: {task.get_coro()}")
 
     source.cleanup()
     while True:
         # Listen to Audio input, then send it to bot to generate text
         to_send = detsy_bot.discord_colab(5)
+        ctx_to_send = "I heard: " + to_send
+        await ctx.send(ctx_to_send)
+        
         response = await detsy_bot.send_msg(to_send)
 
         # Strips any actions to do, then does the actions
         response, actions = action_stripper(response)
-        print(response)
+        print("response: " + response)
 
         # Generates audio file, then speaks the audio file through Discord channel
         # path, file_length = await detsy_bot.playHT_wav_generator(response)
         # Use this for testing to not waste money:
         path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
         action_looper(actions) # Perform actions after audio generation, but before 'speaking'
-        print("Made it past action looper")
         source = FFmpegPCMAudio(path)
         player = voice.play(source)
         await asyncio.sleep(file_length)
