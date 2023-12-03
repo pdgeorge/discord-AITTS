@@ -27,7 +27,7 @@ import time
 # TODO: Place SYSTEM_MESSAGE into external file
 # TODO: 
 
-SYSTEM_MESSAGE = "You are a streamer on Twitch known as Detsy. You are funny and friendly. You primarily play V-R-Chat. You are most known for being a 'Mint' (a small, short, cute, femboy avatar that must never be lewded). People accuse you of being the 'ERP king' but you refute those allegations, maintaining that you are wholesome. You will even say 'Do not lewd the Mint'. You do not stream for money or glory, you only stream for friendship. You will begin sentences with the following depending on the emotion you want to portray: *happy* if you want to be happy, *exasperated* if you are exasperated, *blush* for when you want to blush, *derp* for when you are confused, *embarrassed* if you are embarrassed, *scared* if you are scared, *alert* if something grabs your attention. Finally, you can *wink* whenever you want if you want to. Most importantly, please only respond with one sentence at a time!"
+SYSTEM_MESSAGE = "You are a streamer on Twitch known as Detsy. You are funny and friendly. You primarily play V-R-Chat. You are most known for being a 'Mint' (a small, short, cute, femboy avatar that must never be lewded). People accuse you of being the 'ERP king' but you refute those allegations, maintaining that you are wholesome. You will even say 'Do not lewd the Mint'. You do not stream for money or glory, you only stream for friendship. You will begin sentences with the following depending on the emotion you want to portray: *happy* if you want to be happy, *exasperated* if you are exasperated, *blush* for when you want to blush, *derp* for when you are confused, *embarrassed* if you are embarrassed, *scared* if you are scared, *alert* if something grabs your attention. Finally, you can *wink* whenever you want if you want to, but try not to over do it. Most importantly, please only respond with one sentence at a time!"
 WAKE_UP_MESSAGE = "Hello Detsy, are you ready to start streaming?"
 
 DISCORD_TOKEN = os.environ.get('CYRA_DISCORD')
@@ -59,17 +59,19 @@ def wink():
     
 
 def mood(fun_key):
+    print(fun_key)
     time.sleep(0.1)
     detsy_bot.last_emote = fun_key
-    print(fun_key)
     keyboard.press("left shift")
     keyboard.press(fun_key)
     time.sleep(0.1)
     keyboard.release("left shift")
     keyboard.release(fun_key)
     time.sleep(0.1)
+    print(fun_key)
 
 def action_looper(action_list):
+    print("Inside action_looper")
     for action in action_list:
         action()
 
@@ -99,7 +101,7 @@ async def listen_to_press():
             except sr.RequestError as e:
                 print(f"Error making the request; {e}")
 
-def action_stipper(msg):
+def action_stripper(msg):
     functions_to_call = []
     print("message received: " + msg)
     words_to_check = {"*happy*": "f1", "*exasperated*": "f2", "*blush*": "f3", "*derp*": "f4", "*wink*": "", "*embarrassed*": "f6", "*scared*": "f7", "*alert*": "f8"}
@@ -110,46 +112,46 @@ def action_stipper(msg):
             pass
         elif word.lower() in msg_lower:
             msg_lower = msg_lower.replace(word.lower(), "")
-            print("word: ",word.lower()," fun_key: ",fun_key)
             mood_lambda = lambda key=fun_key: mood(fun_key=key)
             functions_to_call.append(mood_lambda)
+        msg_lower = msg_lower.replace(word.lower(), "")
     return msg_lower, functions_to_call
 
 def actions_tester():
     time.sleep(5)
-    response, actions = action_stipper("*happy* I am happy to see you")
+    response, actions = action_stripper("*happy* I am happy to see you")
     print(response)
     action_looper(actions)
     time.sleep(1)
-    response, actions = action_stipper("*exasperated* I am exasperated!")
+    response, actions = action_stripper("*exasperated* I am exasperated!")
     print(response)
     action_looper(actions)
     time.sleep(1)
-    response, actions = action_stipper("*blush* UwU do not lewd the mint.")
+    response, actions = action_stripper("*blush* UwU do not lewd the mint.")
     print(response)
     action_looper(actions)
     time.sleep(1)
-    response, actions = action_stipper("*derp* What did you say?")
+    response, actions = action_stripper("*derp* What did you say?")
     print(response)
     action_looper(actions)
     time.sleep(1)
-    response, actions = action_stipper("*wink* I think you are cute.")
+    response, actions = action_stripper("*wink* I think you are cute.")
     print(response)
     action_looper(actions)
     time.sleep(1)
-    response, actions = action_stipper("*embarrassed* I am a little shy.")
+    response, actions = action_stripper("*embarrassed* I am a little shy.")
     print(response)
     action_looper(actions)
     time.sleep(1)
-    response, actions = action_stipper("*scared* Ahhhhh")
+    response, actions = action_stripper("*scared* Ahhhhh")
     print(response)
     action_looper(actions)
     time.sleep(1)
-    response, actions = action_stipper("*alert* I am watching you.")
+    response, actions = action_stripper("*alert* I am watching you.")
     print(response)
     action_looper(actions)
     time.sleep(1)
-    response, actions = action_stipper("*happy* I am happy to see you")
+    response, actions = action_stripper("*happy* I am happy to see you")
     print(response)
     action_looper(actions)
 
@@ -166,7 +168,7 @@ async def join(ctx):
     response = await detsy_bot.send_msg(to_send)
 
     # Strips any actions to do, then does the actions
-    response, actions = action_stipper(response)
+    response, actions = action_stripper(response)
     print(response)
 
     # Generates audio file, then speaks the audio file through Discord channel
@@ -176,10 +178,13 @@ async def join(ctx):
     action_looper(actions) # Perform actions after audio generation, but before 'speaking'
     source = FFmpegPCMAudio(path)
     player = voice.play(source)
+    source.cleanup()
     await asyncio.sleep(file_length)
+    print("post sleep?")
     if detsy_bot.wink_flag == True:
         wink()
         detsy_bot.wink_flag = False
+    print("Post wink1?!!?")
 
     # To see what tasks are currently stuck
     tasks = asyncio.all_tasks()
@@ -189,11 +194,11 @@ async def join(ctx):
 
     while True:
         # Listen to Audio input, then send it to bot to generate text
-        to_send = await detsy_bot.discord_colab(5)
+        to_send = detsy_bot.discord_colab(5)
         response = await detsy_bot.send_msg(to_send)
 
         # Strips any actions to do, then does the actions
-        response, actions = action_stipper(response)
+        response, actions = action_stripper(response)
         print(response)
 
         # Generates audio file, then speaks the audio file through Discord channel
@@ -201,6 +206,7 @@ async def join(ctx):
         # Use this for testing to not waste money:
         path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
         action_looper(actions) # Perform actions after audio generation, but before 'speaking'
+        print("Made it past action looper")
         source = FFmpegPCMAudio(path)
         player = voice.play(source)
         await asyncio.sleep(file_length)
@@ -244,6 +250,12 @@ async def emoteTest(ctx):
     for task in tasks:
         print(f"Task: {task}, Coroutine: {task.get_coro()}")
 
+
+# Command to make the bot join a voice channel
+@discord_bot.command(name='load')
+async def load(ctx):
+    detsy_bot.load_from_file(detsy_bot.bot_file)
+
 async def main():
     print("async main")
     # Run the bot with the token
@@ -252,6 +264,3 @@ async def main():
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main())
-
-    # response_path = await detsy_bot.save_message_two(response, 225) # Creates robo TTS
-    # await detsy_bot.read_message_three(response_path, OUTPUT_DEVICE) # Sends TTS to RVC
