@@ -178,7 +178,6 @@ async def join(ctx):
     action_looper(actions) # Perform actions after audio generation, but before 'speaking'
     source = FFmpegPCMAudio(path)
     player = voice.play(source)
-    source.cleanup()
     await asyncio.sleep(file_length)
     print("post sleep?")
     if detsy_bot.wink_flag == True:
@@ -192,6 +191,7 @@ async def join(ctx):
     for task in tasks:
         print(f"Task: {task}, Coroutine: {task.get_coro()}")
 
+    source.cleanup()
     while True:
         # Listen to Audio input, then send it to bot to generate text
         to_send = detsy_bot.discord_colab(5)
@@ -213,12 +213,7 @@ async def join(ctx):
         if detsy_bot.wink_flag == True:
             wink()
             detsy_bot.wink_flag = False
-
-        # To see what tasks are currently stuck
-        tasks = asyncio.all_tasks()
-        print("Pending tasks:", len(tasks))
-        for task in tasks:
-            print(f"Task: {task}, Coroutine: {task.get_coro()}")
+        source.cleanup()
 
 # Event to print a message when the bot is ready
 @discord_bot.event
@@ -244,11 +239,6 @@ async def disconnect(ctx):
 @discord_bot.command(name='emoteTest')
 async def emoteTest(ctx):
     actions_tester()
-    # To see what tasks are currently stuck
-    tasks = asyncio.all_tasks()
-    print("Pending tasks:", len(tasks))
-    for task in tasks:
-        print(f"Task: {task}, Coroutine: {task.get_coro()}")
 
 
 # Command to make the bot join a voice channel
