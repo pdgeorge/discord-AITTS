@@ -5,7 +5,6 @@ import os
 import discord
 from discord import FFmpegPCMAudio
 from discord.ext import commands
-import speech_recognition as sr
 import time
 
 # VRChat emotion -> Hotkey to use
@@ -23,21 +22,18 @@ import time
 # TODO: Strip *action* out of text during action_stripper
 # ^^ !DONE! ^^
 # TODO: Add Wink Detection (If wink, add wink_flag to bot. Have a wink_flag checker that will *wink* if wink_flag == True)
+# ^^ !DONE! ^^
 # TODO: Add protections to only allow certain people to use commands
-# TODO: Place SYSTEM_MESSAGE into external file
-# TODO: 
+# TODO: Place SYSTEM_MESSAGE and WAKE_UP_MESSAGE into external file
+# QUESTION: Does the play.ht manifest path need to be an init param?
 
+BOT_NAME = "Detsy"
 SYSTEM_MESSAGE = "You are a streamer on Twitch known as Detsy. You are funny and friendly. You primarily play V-R-Chat. You are most known for being a 'Mint' (a small, short, cute, femboy avatar that must never be lewded). People accuse you of being the 'ERP king' but you refute those allegations, maintaining that you are wholesome. You will even say 'Do not lewd the Mint'. You do not stream for money or glory, you only stream for friendship. You will begin sentences with the following depending on the emotion you want to portray: *happy* if you want to be happy, *exasperated* if you are exasperated, *blush* for when you want to blush, *derp* for when you are confused, *embarrassed* if you are embarrassed, *scared* if you are scared, *alert* if something grabs your attention. Finally, you can *wink* whenever you want if you want to, but try not to over do it. Most importantly, please only respond with one sentence at a time!"
 WAKE_UP_MESSAGE = "Hello Detsy, are you ready to start streaming?"
 
 DISCORD_TOKEN = os.environ.get('CYRA_DISCORD')
 
-# To find a device name and id, use bot_openai.scan_audio_devices
-OUTPUT_DEVICE_NAME = "CABLE Input (VB-Audio Virtual Cable)"
-OUTPUT_DEVICE_ID = 13
-FFMPEG_PATH = "C:\\ffmpeg\\ffmpeg.exe"
-
-detsy_bot = OpenAI_Bot("Detsy", SYSTEM_MESSAGE)
+detsy_bot = OpenAI_Bot(BOT_NAME, SYSTEM_MESSAGE)
 
 # Discord bot instance with '!' prefix to commands
 intents = discord.Intents.all()
@@ -57,7 +53,6 @@ def wink():
     keyboard.release(detsy_bot.last_emote)
     time.sleep(0.1)
     
-
 def mood(fun_key):
     print(fun_key)
     time.sleep(0.1)
@@ -73,32 +68,6 @@ def action_looper(action_list):
     print("Inside action_looper")
     for action in action_list:
         action()
-
-async def listen_to_press():
-    recognizer = sr.Recognizer()
-
-    with sr.Microphone() as source:
-        print("Say 'forward' to move forward or 'exit' to quit.")
-
-        while True:
-            try:
-                audio_data = recognizer.listen(source, timeout=5)
-                command = recognizer.recognize_google(audio_data).lower()
-
-                if "forward" in command:
-                    print("Moving forward!")
-                    keyboard.press("w")
-                    time.sleep(1)
-                    keyboard.release("w")
-
-                elif "exit" in command:
-                    print("Exiting program.")
-                    break
-
-            except sr.UnknownValueError:
-                print("Could not understand audio.")
-            except sr.RequestError as e:
-                print(f"Error making the request; {e}")
 
 def action_stripper(msg):
     functions_to_call = []
@@ -166,14 +135,14 @@ async def join(ctx):
     # Generates the text from bot
     response = await detsy_bot.send_msg(to_send)
 
-    # Strips any actions to do, then does the actions
+    # Strips any actions to do from the reponse and sets them as separate lambdas
     response, actions = action_stripper(response)
     print("response: " + response)
 
     # Generates audio file, then speaks the audio file through Discord channel
-    # path, file_length = await detsy_bot.playHT_wav_generator(response)
+    path, file_length = await detsy_bot.playHT_wav_generator(response)
     # Use this for testing to not waste money:
-    path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
+    # path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
     action_looper(actions) # Perform actions after audio generation, but before 'speaking'
     source = FFmpegPCMAudio(path)
     player = voice.play(source)
@@ -196,9 +165,9 @@ async def join(ctx):
         print("response: " + response)
 
         # Generates audio file, then speaks the audio file through Discord channel
-        # path, file_length = await detsy_bot.playHT_wav_generator(response)
+        path, file_length = await detsy_bot.playHT_wav_generator(response)
         # Use this for testing to not waste money:
-        path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
+        # path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
         action_looper(actions) # Perform actions after audio generation, but before 'speaking'
         source = FFmpegPCMAudio(path)
         player = voice.play(source)
@@ -206,6 +175,39 @@ async def join(ctx):
         if detsy_bot.wink_flag == True:
             wink()
             detsy_bot.wink_flag = False
+        source.cleanup()
+
+# Basic testing the system, does not include testing playHT
+@discord_bot.command(name="testJoin")
+async def join(ctx):
+    voice_channel = ctx.author.voice.channel
+    voice = await voice_channel.connect()
+    channel = discord_bot.get_channel(1181107351940501585)
+    await asyncio.sleep(1)
+    time.sleep(0.1)
+    to_send = WAKE_UP_MESSAGE
+    await channel.send(to_send)
+    response = await detsy_bot.send_msg(to_send)
+    response, actions = action_stripper(response)
+    path_to_voice, file_length = detsy_bot.create_voice(response)
+    print(path_to_voice)
+    action_looper(actions)
+    source = FFmpegPCMAudio(path_to_voice)
+    player = voice.play(source)
+    await asyncio.sleep(file_length)
+    source.cleanup()
+
+    while True:
+        to_send = detsy_bot.discord_colab(5)
+        await channel.send(to_send)
+        response = await detsy_bot.send_msg(to_send)
+        response, actions = action_stripper(response)
+        path_to_voice, file_length = detsy_bot.create_voice(response)
+        print(path_to_voice)
+        action_looper(actions)
+        source = FFmpegPCMAudio(path_to_voice)
+        player = voice.play(source)
+        await asyncio.sleep(file_length)
         source.cleanup()
 
 # Event to print a message when the bot is ready
@@ -233,7 +235,6 @@ async def disconnect(ctx):
 async def emoteTest(ctx):
     actions_tester()
 
-
 # Command to make the bot join a voice channel
 @discord_bot.command(name='load')
 async def load(ctx):
@@ -241,7 +242,6 @@ async def load(ctx):
 
 async def main():
     print("async main")
-    # Run the bot with the token
     await discord_bot.start(DISCORD_TOKEN)
 
 if __name__ == "__main__":
