@@ -160,6 +160,7 @@ async def load(ctx):
 async def start(
     ctx: ApplicationContext
 ):
+    global transcribed_text_from_cb
     channel = ctx.channel
     voice = ctx.author.voice
 
@@ -179,34 +180,49 @@ async def start(
 
     # Generates audio file, then speaks the audio file through Discord channel
     # path, file_length = await detsy_bot.playHT_wav_generator(response)
-    path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
     # Use this for testing to not waste money:
-    # path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
+    path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
     action_looper(actions) # Perform actions after audio generation, but before 'speaking'
     source = FFmpegPCMAudio(path)
     player = vc.play(source)
     await asyncio.sleep(file_length)
+    ################################### INTRO FINISHED BEGIN RECORDING
+    while True:
 
-    print("Done with the first start thing")
+        print("Begining rec")
+        sink = discord.sinks.MP3Sink()
+        vc.start_recording(
+            sink,
+            finished_callback,
+            ctx.channel,
+        )
+        await asyncio.sleep(LISTEN_FOR)
 
-    print("Begining rec")
-    sink = discord.sinks.MP3Sink()
-    vc.start_recording(
-        sink,
-        finished_callback,
-        ctx.channel,
-    )
-    await asyncio.sleep(LISTEN_FOR)
+        vc.stop_recording()
+        await asyncio.sleep(2)
 
-    vc.stop_recording()
-    del discord_bot.connections[ctx.guild.id] # Causes the disconnection
-    if transcribed_text_from_cb != "":
-        print("ttfcb:")
-        print(transcribed_text_from_cb)
+        to_send = transcribed_text_from_cb
+        print("204")
+        print("ttfcb: "+transcribed_text_from_cb)
+        print("t_s: "+to_send)
+        await ctx.send(to_send)
+        response = await detsy_bot.send_msg(to_send)
+        await ctx.send(response)
+        response, actions = action_stripper(response)
+        await ctx.send(response)
+
+        path_to_voice, file_length = detsy_bot.create_voice(response)
+        print(path_to_voice)
+        action_looper(actions)
+        source = FFmpegPCMAudio(path_to_voice)
+        player = vc.play(source)
+        await asyncio.sleep(file_length)
+        source.cleanup()
 
 async def finished_callback(sink, channel: discord.TextChannel, *args):
+    global transcribed_text_from_cb
     recorded_users = [f"<@{user_id}>" for user_id, audio in sink.audio_data.items()]
-    await sink.vc.disconnect()
+    # await sink.vc.disconnect()
     # For saving to Discord Channel
     # files = [discord.File(audio.file, f"{user_id}.{sink.encoding}") for user_id, audio in sink.audio_data.items()]
     # For saving locally
@@ -214,16 +230,16 @@ async def finished_callback(sink, channel: discord.TextChannel, *args):
         file_path = f"{user_id}.{sink.encoding}"
         with open(file_path, 'wb') as file:
             file.write(audio.file.read())
-            print("A little bit of a wait")
             await asyncio.sleep(0.5)
         file_path = await mp3_to_wav(file_path)
         transcribed_text_from_cb = await transcribe_audio(file_path, channel, user_id)
+        print("ttfcb in f_c: "+transcribed_text_from_cb)
 
     # await channel.send(f"Finished! Recorded audio for {', '.join(recorded_users)}.", files=files)
     await channel.send(f"Finished! Recorded audio for {', '.join(recorded_users)}.")
 
 async def transcribe_audio(file_path, channel: discord.TextChannel, user_id):
-    print(file_path)
+    print("t_a: "+file_path)
     r = sr.Recognizer()
     with sr.AudioFile(file_path) as source:
         audio = r.record(source)
