@@ -165,9 +165,29 @@ async def start(
 
     if not voice:
         return await channel.send("You're not in a vc right now")
-
     vc = await voice.channel.connect()
     discord_bot.connections.update({ctx.guild.id: vc})
+
+    to_send = WAKE_UP_MESSAGE
+    
+    # Generates the text from bot
+    response = await detsy_bot.send_msg(to_send)
+
+    # Strips any actions to do from the reponse and sets them as separate lambdas
+    response, actions = action_stripper(response)
+    print("response: " + response)
+
+    # Generates audio file, then speaks the audio file through Discord channel
+    # path, file_length = await detsy_bot.playHT_wav_generator(response)
+    path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
+    # Use this for testing to not waste money:
+    # path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
+    action_looper(actions) # Perform actions after audio generation, but before 'speaking'
+    source = FFmpegPCMAudio(path)
+    player = vc.play(source)
+    await asyncio.sleep(file_length)
+
+    print("Done with the first start thing")
 
     print("Begining rec")
     sink = discord.sinks.MP3Sink()
