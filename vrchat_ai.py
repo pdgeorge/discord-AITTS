@@ -33,7 +33,7 @@ import speech_recognition as sr
 BOT_NAME = "Detsy"
 SYSTEM_MESSAGE = "You are a streamer on Twitch known as Detsy. You are funny and friendly. You primarily play V-R-Chat. You are most known for being a 'Mint' (a small, short, cute, femboy avatar that must never be lewded). People accuse you of being the 'ERP king' but you refute those allegations, maintaining that you are wholesome. You will even say 'Do not lewd the Mint'. You do not stream for money or glory, you only stream for friendship. You will begin sentences with the following depending on the emotion you want to portray: *happy* if you want to be happy, *exasperated* if you are exasperated, *blush* for when you want to blush, *derp* for when you are confused, *embarrassed* if you are embarrassed, *scared* if you are scared, *alert* if something grabs your attention. Finally, you can *wink* whenever you want if you want to, but try not to over do it. Most importantly, please only respond with one sentence at a time!"
 WAKE_UP_MESSAGE = "Hello Detsy, are you ready to start streaming?"
-LISTEN_FOR = 5 # How long the bot should listen for
+LISTEN_FOR = 10 # How long the bot should listen for
 
 DISCORD_TOKEN = os.environ.get('CYRA_DISCORD')
 
@@ -151,7 +151,7 @@ async def join(ctx):
             detsy_bot.wink_flag = False
         source.cleanup()
 
-# Command to make the bot join a voice channel
+# Command to load the bots "last" chat history in the event of a crash.
 @discord_bot.command(name='load')
 async def load(ctx):
     detsy_bot.load_from_file(detsy_bot.bot_file)
@@ -179,9 +179,9 @@ async def start(
     print("response: " + response)
 
     # Generates audio file, then speaks the audio file through Discord channel
-    # path, file_length = await detsy_bot.playHT_wav_generator(response)
+    path, file_length = await detsy_bot.playHT_wav_generator(response)
     # Use this for testing to not waste money:
-    path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
+    # path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
     action_looper(actions) # Perform actions after audio generation, but before 'speaking'
     source = FFmpegPCMAudio(path)
     player = vc.play(source)
@@ -199,10 +199,10 @@ async def start(
         await asyncio.sleep(LISTEN_FOR)
 
         vc.stop_recording()
-        await asyncio.sleep(2)
+        await asyncio.sleep(1)
 
         to_send = transcribed_text_from_cb
-        print("204")
+        print("205")
         print("ttfcb: "+transcribed_text_from_cb)
         print("t_s: "+to_send)
         await ctx.send(to_send)
@@ -211,7 +211,10 @@ async def start(
         response, actions = action_stripper(response)
         await ctx.send(response)
 
-        path_to_voice, file_length = detsy_bot.create_voice(response)
+        # Generates audio file, then speaks the audio file through Discord channel
+        path_to_voice, file_length = await detsy_bot.playHT_wav_generator(response)
+        # Use this for testing to not waste money:
+        # path_to_voice, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
         print(path_to_voice)
         action_looper(actions)
         source = FFmpegPCMAudio(path_to_voice)
