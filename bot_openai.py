@@ -101,6 +101,7 @@ class OpenAI_Bot():
         self.wink_flag = False
         self.last_emote = "f1"
 
+
         self.start_datetime = datetime.datetime.now()
         path = normalise_dir(TEXT_DIR)
         temp_bot_file = f"{self.bot_name}.txt"
