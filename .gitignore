@@ -3,9 +3,11 @@ DetsyAI/
 outputs/
 src/
 CurlRequest.sh
-discord_bot.py
+# discord_bot.py
+discord_bot_2.py
 tester.py
 *.wav
+*.mp3
 *.txt
 
 # Byte-compiled / optimized / DLL files

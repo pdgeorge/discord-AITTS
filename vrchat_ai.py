@@ -4,10 +4,11 @@ from bot_openai import OpenAI_Bot
 import os
 import discord
 from discord import FFmpegPCMAudio
+from discord.commands import ApplicationContext
 from discord.ext import commands
-import speech_recognition as sr
 import time
-import re
+from pydub import AudioSegment
+import speech_recognition as sr
 
 # VRChat emotion -> Hotkey to use
 # *happy* -> shift+f1 (default)
@@ -24,22 +25,28 @@ import re
 # TODO: Strip *action* out of text during action_stripper
 # ^^ !DONE! ^^
 # TODO: Add Wink Detection (If wink, add wink_flag to bot. Have a wink_flag checker that will *wink* if wink_flag == True)
+# ^^ !DONE! ^^
 # TODO: Add protections to only allow certain people to use commands
-# TODO: Place SYSTEM_MESSAGE into external file
-# TODO: 
+# TODO: Place SYSTEM_MESSAGE and WAKE_UP_MESSAGE into external file
+# QUESTION: Does the play.ht manifest path need to be an init param?
 
+BOT_NAME = "Detsy"
+SYSTEM_MESSAGE = "You are a streamer on Twitch known as Detsy. You are funny and friendly. You primarily play V-R-Chat. You are most known for being a 'Mint' (a small, short, cute, femboy avatar that must never be lewded). People accuse you of being the 'ERP king' but you refute those allegations, maintaining that you are wholesome. You will even say 'Do not lewd the Mint'. You do not stream for money or glory, you only stream for friendship. You will begin sentences with the following depending on the emotion you want to portray: *happy* if you want to be happy, *exasperated* if you are exasperated, *blush* for when you want to blush, *derp* for when you are confused, *embarrassed* if you are embarrassed, *scared* if you are scared, *alert* if something grabs your attention. Finally, you can *wink* whenever you want if you want to, but try not to over do it. Most importantly, please only respond with one sentence at a time!"
 
-SYSTEM_MESSAGE = "You are a streamer on Twitch known as Detsy. You are funny and friendly. You primarily play V-R-Chat. You are most known for being a 'Mint' (a small, short, cute, femboy avatar that must never be lewded). People accuse you of being the 'E-R-P king' but you refute those allegations, maintaining that you are wholesome. You will even say 'Do not lewd the Mint'. You do not stream for money or glory, you only stream for friendship. You will begin sentences with the following depending on the emotion you want to portray: *happy* if you want to be happy, *exasperated* if you are exasperated, *blush* for when you want to blush, *derp* for when you are confused, *embarrassed* if you are embarrassed, *scared* if you are scared, *alert* if something grabs your attention. Finally, you can *wink* whenever you want if you want to, but try not to over do it. Most importantly, please only respond with one sentence at a time!"
-=======
 WAKE_UP_MESSAGE = "Hello Detsy, are you ready to start streaming?"
+LISTEN_FOR = 10 # How long the bot should listen for
 
 DISCORD_TOKEN = os.environ.get('CYRA_DISCORD')
 
-detsy_bot = OpenAI_Bot("Detsy", SYSTEM_MESSAGE)
+detsy_bot = OpenAI_Bot(BOT_NAME, SYSTEM_MESSAGE)
+
 
 # Discord bot instance with '!' prefix to commands
 intents = discord.Intents.all()
 discord_bot = commands.Bot(command_prefix='!', intents=intents)
+discord_bot.connections = {}
+
+transcribed_text_from_cb = ""
 
 
 def wink():
@@ -56,7 +63,6 @@ def wink():
     keyboard.release(detsy_bot.last_emote)
     time.sleep(0.1)
     
-
 def mood(fun_key):
     print(fun_key)
     time.sleep(0.1)
@@ -72,32 +78,6 @@ def action_looper(action_list):
     print("Inside action_looper")
     for action in action_list:
         action()
-
-async def listen_to_press():
-    recognizer = sr.Recognizer()
-
-    with sr.Microphone() as source:
-        print("Say 'forward' to move forward or 'exit' to quit.")
-
-        while True:
-            try:
-                audio_data = recognizer.listen(source, timeout=5)
-                command = recognizer.recognize_google(audio_data).lower()
-
-                if "forward" in command:
-                    print("Moving forward!")
-                    keyboard.press("w")
-                    time.sleep(1)
-                    keyboard.release("w")
-
-                elif "exit" in command:
-                    print("Exiting program.")
-                    break
-
-            except sr.UnknownValueError:
-                print("Could not understand audio.")
-            except sr.RequestError as e:
-                print(f"Error making the request; {e}")
 
 def action_stripper(msg):
     functions_to_call = []
@@ -116,43 +96,10 @@ def action_stripper(msg):
         msg_lower = msg_lower.replace(word.lower(), "")
     return msg_lower, functions_to_call
 
-def actions_tester():
-    time.sleep(5)
-    response, actions = action_stripper("*happy* I am happy to see you")
-    print(response)
-    action_looper(actions)
-    time.sleep(1)
-    response, actions = action_stripper("*exasperated* I am exasperated!")
-    print(response)
-    action_looper(actions)
-    time.sleep(1)
-    response, actions = action_stripper("*blush* UwU do not lewd the mint.")
-    print(response)
-    action_looper(actions)
-    time.sleep(1)
-    response, actions = action_stripper("*derp* What did you say?")
-    print(response)
-    action_looper(actions)
-    time.sleep(1)
-    response, actions = action_stripper("*wink* I think you are cute.")
-    print(response)
-    action_looper(actions)
-    time.sleep(1)
-    response, actions = action_stripper("*embarrassed* I am a little shy.")
-    print(response)
-    action_looper(actions)
-    time.sleep(1)
-    response, actions = action_stripper("*scared* Ahhhhh")
-    print(response)
-    action_looper(actions)
-    time.sleep(1)
-    response, actions = action_stripper("*alert* I am watching you.")
-    print(response)
-    action_looper(actions)
-    time.sleep(1)
-    response, actions = action_stripper("*happy* I am happy to see you")
-    print(response)
-    action_looper(actions)
+# Event to print a message when the bot is ready
+@discord_bot.event
+async def on_ready():
+    print(f'{discord_bot.user} has connected to Discord!')
 
 # Command to make the bot join a voice channel
 @discord_bot.command(name='join')
@@ -166,14 +113,14 @@ async def join(ctx):
     # Generates the text from bot
     response = await detsy_bot.send_msg(to_send)
 
-    # Strips any actions to do, then does the actions
+    # Strips any actions to do from the reponse and sets them as separate lambdas
     response, actions = action_stripper(response)
     print("response: " + response)
 
     # Generates audio file, then speaks the audio file through Discord channel
-    # path, file_length = await detsy_bot.playHT_wav_generator(response)
+    path, file_length = await detsy_bot.playHT_wav_generator(response)
     # Use this for testing to not waste money:
-    path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
+    # path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
     action_looper(actions) # Perform actions after audio generation, but before 'speaking'
     source = FFmpegPCMAudio(path)
     player = voice.play(source)
@@ -196,9 +143,9 @@ async def join(ctx):
         print("response: " + response)
 
         # Generates audio file, then speaks the audio file through Discord channel
-        # path, file_length = await detsy_bot.playHT_wav_generator(response)
+        path, file_length = await detsy_bot.playHT_wav_generator(response)
         # Use this for testing to not waste money:
-        path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
+        # path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
         action_looper(actions) # Perform actions after audio generation, but before 'speaking'
 
         source = FFmpegPCMAudio(path)
@@ -209,42 +156,115 @@ async def join(ctx):
             detsy_bot.wink_flag = False
         source.cleanup()
 
-# Event to print a message when the bot is ready
-@discord_bot.event
-async def on_ready():
-    print(f'{discord_bot.user} has connected to Discord!')
-
-# Command to make the bot disconnect from a voice channel
-# Does not actually work sadly
-@discord_bot.command(name='disconnect')
-async def disconnect(ctx):
-    await ctx.send("Attempting to disconnect?")
-    voice_channel = ctx.author.voice.channel
-    await ctx.send(f"Disconnected from {voice_channel.name}")
-    
-    if voice_channel:
-        await voice_channel.disconnect()
-        await ctx.guild.voice_client.disconnect()
-        await ctx.send("Disconnected from the voice channel.")
-    else:
-        await ctx.send("I am not currently in a voice channel.")
-
-# Command to make the bot join a voice channel
-@discord_bot.command(name='emoteTest')
-async def emoteTest(ctx):
-    actions_tester()
-
-
-# Command to make the bot join a voice channel
+# Command to load the bots "last" chat history in the event of a crash.
 @discord_bot.command(name='load')
 async def load(ctx):
     detsy_bot.load_from_file(detsy_bot.bot_file)
 
-async def main():
-    print("async main")
-    # Run the bot with the token
-    await discord_bot.start(DISCORD_TOKEN)
+@discord_bot.command()
+async def start(
+    ctx: ApplicationContext
+):
+    global transcribed_text_from_cb
+    channel = ctx.channel
+    voice = ctx.author.voice
 
-if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    if not voice:
+        return await channel.send("You're not in a vc right now")
+    vc = await voice.channel.connect()
+    discord_bot.connections.update({ctx.guild.id: vc})
+
+    to_send = WAKE_UP_MESSAGE
+    
+    # Generates the text from bot
+    response = await detsy_bot.send_msg(to_send)
+
+    # Strips any actions to do from the reponse and sets them as separate lambdas
+    response, actions = action_stripper(response)
+    print("response: " + response)
+
+    # Generates audio file, then speaks the audio file through Discord channel
+    path, file_length = await detsy_bot.playHT_wav_generator(response)
+    # Use this for testing to not waste money:
+    # path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
+    action_looper(actions) # Perform actions after audio generation, but before 'speaking'
+    source = FFmpegPCMAudio(path)
+    player = vc.play(source)
+    await asyncio.sleep(file_length)
+    ################################### INTRO FINISHED BEGIN RECORDING
+    while True:
+
+        print("Begining rec")
+        sink = discord.sinks.MP3Sink()
+        vc.start_recording(
+            sink,
+            finished_callback,
+            ctx.channel,
+        )
+        await asyncio.sleep(LISTEN_FOR)
+
+        vc.stop_recording()
+        await asyncio.sleep(1)
+
+        to_send = transcribed_text_from_cb
+        print("205")
+        print("ttfcb: "+transcribed_text_from_cb)
+        print("t_s: "+to_send)
+        await ctx.send(to_send)
+        response = await detsy_bot.send_msg(to_send)
+        await ctx.send(response)
+        response, actions = action_stripper(response)
+        await ctx.send(response)
+
+        # Generates audio file, then speaks the audio file through Discord channel
+        path_to_voice, file_length = await detsy_bot.playHT_wav_generator(response)
+        # Use this for testing to not waste money:
+        # path_to_voice, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
+        print(path_to_voice)
+        action_looper(actions)
+        source = FFmpegPCMAudio(path_to_voice)
+        player = vc.play(source)
+        await asyncio.sleep(file_length)
+        source.cleanup()
+
+async def finished_callback(sink, channel: discord.TextChannel, *args):
+    global transcribed_text_from_cb
+    recorded_users = [f"<@{user_id}>" for user_id, audio in sink.audio_data.items()]
+    # await sink.vc.disconnect()
+    # For saving to Discord Channel
+    # files = [discord.File(audio.file, f"{user_id}.{sink.encoding}") for user_id, audio in sink.audio_data.items()]
+    # For saving locally
+    for user_id, audio in sink.audio_data.items():
+        file_path = f"{user_id}.{sink.encoding}"
+        with open(file_path, 'wb') as file:
+            file.write(audio.file.read())
+            await asyncio.sleep(0.5)
+        file_path = await mp3_to_wav(file_path)
+        transcribed_text_from_cb = await transcribe_audio(file_path, channel, user_id)
+        print("ttfcb in f_c: "+transcribed_text_from_cb)
+
+    # await channel.send(f"Finished! Recorded audio for {', '.join(recorded_users)}.", files=files)
+    await channel.send(f"Finished! Recorded audio for {', '.join(recorded_users)}.")
+
+async def transcribe_audio(file_path, channel: discord.TextChannel, user_id):
+    print("t_a: "+file_path)
+    r = sr.Recognizer()
+    with sr.AudioFile(file_path) as source:
+        audio = r.record(source)
+    try:
+        transcribed_text = r.recognize_google(audio)
+        # await channel.send(f"Transcription for <@{user_id}>: {transcribed_text}")
+        print(f"Transcription for <@{user_id}>: {transcribed_text}")
+        return transcribed_text
+    except sr.UnknownValueError:
+        await channel.send(f"Unable to transcribe audio for <@{user_id}>. Speech Recognition could not understand the audio.")
+    except sr.RequestError as e:
+        await channel.send(f"Unable to transcribe audio for <@{user_id}>. Error with the Speech Recognition service: {e}")
+
+async def mp3_to_wav(path):
+    sound = AudioSegment.from_mp3(path)
+    new_path = path+".wav"
+    sound.export(new_path, format="wav")
+    return new_path
+
+discord_bot.run(DISCORD_TOKEN)

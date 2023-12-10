@@ -13,6 +13,7 @@ from scipy.io import wavfile
 import sounddevice as sd
 from pydub import AudioSegment
 import time
+import math
 
 TEXT_DIR = "./"
 TTS_DIR = "./outputs/"
@@ -127,7 +128,6 @@ class OpenAI_Bot():
             self.chat_history = data
             print(self.chat_history)
 
-            
     def save_json_to_file(self, contents, dir):
         with open(dir, 'w+') as json_file:
             json.dump(contents, json_file)
@@ -170,17 +170,19 @@ class OpenAI_Bot():
         return response.choices[0].message.content
     
     # Create a generic TTS using gTTS
-    # This is a robotic female voice
+    # This is a robotic female voice saved in opus format
     def create_voice(self, msg):
         msgAudio = gTTS(text=msg, lang="en", slow=False)
-        filename = "_Msg" + str(hash(msg)) + ".wav"
+        filename = "_Msg" + str(hash(msg)) + ".mp3"
         normalised_dir = normalise_dir(TTS_DIR)
-        
         # Where is the file?
         msg_file_path = os.path.join(normalised_dir, filename)
         msgAudio.save(msg_file_path)
 
-        return msg_file_path
+        opus_file_path, duration = self.mp3_to_opus(msg_file_path)
+        rounded_duration = math.ceil(duration)
+
+        return opus_file_path, rounded_duration
     
     # Starts playing through default audio channel using VLC
     def read_message(self, msg_file_path):
@@ -227,8 +229,22 @@ class OpenAI_Bot():
         print("ttw file_name: "+file_name)
         return file_name
 
-    def turn_to_opus(self, path_to_mp3ify):
+    def mp3_to_opus(self, path_to_start):
+        mp3_file = AudioSegment.from_file(path_to_start, format="mp3")
 
+        # Generate new filename based on old name
+        output_dir = os.path.dirname(path_to_start)
+        output_name = os.path.splitext(os.path.basename(path_to_start))[0]
+        opus_file_path = os.path.join(output_dir, f"{output_name}.opus")
+        opus_file = opus_file_path
+
+        mp3_file.export(opus_file, format="opus", parameters=["-ar", str(mp3_file.frame_rate)])
+        
+        opus_duration = mp3_file.duration_seconds
+        
+        return opus_file_path, opus_duration
+
+    def turn_to_opus(self, path_to_mp3ify):
         wav_file = AudioSegment.from_file(path_to_mp3ify, format="wav")
 
         # Generate new filename based on old name
@@ -284,17 +300,16 @@ async def testing_main():
     # test_bot.read_message(path)
     # print("Done playing")
     # scan_audio_devices()
-    test_bot.load_from_file(test_bot.bot_file)
-    response = await test_bot.send_msg("What was the last thing we talked about?")
+    # test_bot.load_from_file(test_bot.bot_file)
+    # response = await test_bot.send_msg("Hello, this is a first message")
     # response = speech_listener(10)
-    print(response)
+    # print(response)
     # response = await test_bot.send_msg("Is this a second message?")
     # response = speech_listener(10)
     # print(response)
     # response = await test_bot.send_msg("Is this a THIRD message?")
     # response = speech_listener(10)
     # print(response)
-    # voice_tester()
 
 if __name__ == "__main__":
     asyncio.run(testing_main())
