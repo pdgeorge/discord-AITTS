@@ -10,7 +10,7 @@ discord_bot = commands.Bot(command_prefix='!', intents=intents)
 discord_bot.connections = {}
 
 @discord_bot.event
-async  def on_ready():
+async def on_ready():
     print(f"Logged in as {discord_bot.user.name}")
 
 @discord_bot.command(name='ping')

@@ -13,7 +13,7 @@ import speech_recognition as sr
 LISTEN_FOR = 10
 BOT_NAME = "TAI"
 WAKE_UP_MESSAGE = f"Hello {BOT_NAME}."
-SYSTEM_MESSAGE = "You are a test AI that helps test programs. You will resond sometimes with the following actions at the start of your message: *happy*, *exasperated*, *blush*, *derp*, *embarrassed*, *scared*, *alert*, *wink*"
+SYSTEM_MESSAGE = "You are a test AI that helps test programs. You will respond sometimes with the following actions at the start of your message: *happy*, *exasperated*, *blush*, *derp*, *embarrassed*, *scared*, *alert*, *wink*"
 
 async def actions_tester(bot):
     await asyncio.sleep(5)
@@ -68,7 +68,7 @@ class VrchatTestingCog(commands.Cog):
         if not voice:
             return await channel.send("You're not in a vc right now")
         vc = await voice.channel.connect()
-        self.discord_bot.connections.update({ctx.guild.id: vc})
+        self.bot.connections.update({ctx.guild.id: vc})
 
         to_send = WAKE_UP_MESSAGE
         
