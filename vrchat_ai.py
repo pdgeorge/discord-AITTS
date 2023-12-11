@@ -32,14 +32,14 @@ import speech_recognition as sr
 
 BOT_NAME = "Detsy"
 SYSTEM_MESSAGE = "You are a streamer on Twitch known as Detsy. You are funny and friendly. You primarily play V-R-Chat. You are most known for being a 'Mint' (a small, short, cute, femboy avatar that must never be lewded). People accuse you of being the 'ERP king' but you refute those allegations, maintaining that you are wholesome. You will even say 'Do not lewd the Mint'. You do not stream for money or glory, you only stream for friendship. You will begin sentences with the following depending on the emotion you want to portray: *happy* if you want to be happy, *exasperated* if you are exasperated, *blush* for when you want to blush, *derp* for when you are confused, *embarrassed* if you are embarrassed, *scared* if you are scared, *alert* if something grabs your attention. Finally, you can *wink* whenever you want if you want to, but try not to over do it. Most importantly, please only respond with one sentence at a time!"
-WAKE_UP_MESSAGE = "Hello Detsy, are you ready to start streaming?"
+WAKE_UP_MESSAGE = f"Hello {BOT_NAME}, are you ready to start streaming?"
 LISTEN_FOR = 10 # How long the bot should listen for
 
 # DISCORD_TOKEN = os.environ.get('CYRA_DISCORD')
 
 transcribed_text_from_cb = ""
 
-def wink(detsy_bot):
+def wink(bot):
     keyboard.press("left shift")
     keyboard.press("f5")
     time.sleep(0.1)
@@ -47,16 +47,16 @@ def wink(detsy_bot):
     keyboard.release("f5")
     time.sleep(1)
     keyboard.press("left shift")
-    keyboard.press(detsy_bot.last_emote)
+    keyboard.press(bot.last_emote)
     time.sleep(0.1)
     keyboard.release("left shift")
-    keyboard.release(detsy_bot.last_emote)
+    keyboard.release(bot.last_emote)
     time.sleep(0.1)
     
-def mood(fun_key, detsy_bot):
+def mood(fun_key, bot):
     print(fun_key)
     time.sleep(0.1)
-    detsy_bot.last_emote = fun_key
+    bot.last_emote = fun_key
     keyboard.press("left shift")
     keyboard.press(fun_key)
     time.sleep(0.1)
@@ -69,18 +69,18 @@ def action_looper(action_list):
     for action in action_list:
         action()
 
-def action_stripper(msg, detsy_bot):
+def action_stripper(msg, bot):
     functions_to_call = []
     print("message received: " + msg)
     words_to_check = {"*happy*": "f1", "*exasperated*": "f2", "*blush*": "f3", "*derp*": "f4", "*wink*": "", "*embarrassed*": "f6", "*scared*": "f7", "*alert*": "f8"}
     msg_lower = msg.lower()
     for word, fun_key in words_to_check.items():
         if word == "*wink*":
-            detsy_bot.wink_flag = True
+            bot.wink_flag = True
             pass
         elif word.lower() in msg_lower:
             msg_lower = msg_lower.replace(word.lower(), "")
-            mood_lambda = lambda key=fun_key: mood(fun_key=key, detsy_bot=detsy_bot)
+            mood_lambda = lambda key=fun_key: mood(fun_key=key, bot=bot)
             functions_to_call.append(mood_lambda)
         msg_lower = msg_lower.replace(word.lower(), "")
     return msg_lower, functions_to_call
@@ -114,7 +114,7 @@ class VrchatAI(commands.Cog):
         response = await self.detsy_bot.send_msg(to_send)
 
         # Strips any actions to do from the reponse and sets them as separate lambdas
-        response, actions = action_stripper(msg=response, detsy_bot=self.detsy_bot)
+        response, actions = action_stripper(msg=response, bot=self.detsy_bot)
         print("response: " + response)
 
         # Generates audio file, then speaks the audio file through Discord channel
@@ -146,7 +146,7 @@ class VrchatAI(commands.Cog):
             await ctx.send(to_send)
             response = await self.detsy_bot.send_msg(to_send)
             await ctx.send(response)
-            response, actions = action_stripper(msg=response, detsy_bot=self.detsy_bot)
+            response, actions = action_stripper(msg=response, bot=self.detsy_bot)
             await ctx.send(response)
 
             # Generates audio file, then speaks the audio file through Discord channel
