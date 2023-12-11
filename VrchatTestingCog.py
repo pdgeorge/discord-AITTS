@@ -157,6 +157,4 @@ async def mp3_to_wav(path):
     return new_path
 
 def setup(discord_bot):
-    print("Setup start det")
     discord_bot.add_cog(VrchatTestingCog(discord_bot))
-    print("Setup end det")
