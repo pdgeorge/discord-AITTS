@@ -20,6 +20,6 @@ async def ping(ctx):
     print(f"Bot command prefix: {ctx.prefix}")
 
 discord_bot.load_extension("VrchatTestingCog")
-discord_bot.load_extension("vrchat_ai")
+discord_bot.load_extension("VrchatAI")
 
 discord_bot.run(DISCORD_TOKEN)

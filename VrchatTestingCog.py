@@ -3,7 +3,7 @@ from discord.ext import commands
 from discord import FFmpegPCMAudio
 from discord.commands import ApplicationContext
 import asyncio
-import vrchat_ai
+import VrchatAI
 from bot_openai import OpenAI_Bot
 from pydub import AudioSegment
 import speech_recognition as sr
@@ -19,32 +19,32 @@ SYSTEM_MESSAGE = "You are a test AI that helps test programs. You will resond so
 
 async def actions_tester(bot):
     await asyncio.sleep(5)
-    response, actions = vrchat_ai.action_stripper("*happy* I am happy to see you", bot)
+    response, actions = VrchatAI.action_stripper("*happy* I am happy to see you", bot)
     print(response)
     await asyncio.sleep(1)
-    response, actions = vrchat_ai.action_stripper("*exasperated* I am exasperated!", bot)
+    response, actions = VrchatAI.action_stripper("*exasperated* I am exasperated!", bot)
     print(response)
     await asyncio.sleep(1)
-    response, actions = vrchat_ai.action_stripper("*blush* UwU do not lewd the mint.", bot)
+    response, actions = VrchatAI.action_stripper("*blush* UwU do not lewd the mint.", bot)
     print(response)
     await asyncio.sleep(1)
-    response, actions = vrchat_ai.action_stripper("*derp* What did you say?", bot)
+    response, actions = VrchatAI.action_stripper("*derp* What did you say?", bot)
     print(response)
     await asyncio.sleep(1)
     # Wink test does not work when coggified
-    # response, actions = vrchat_ai.action_stripper("*wink* I think you are cute.")
+    # response, actions = VrchatAI.action_stripper("*wink* I think you are cute.")
     # print(response)
     await asyncio.sleep(1)
-    response, actions = vrchat_ai.action_stripper("*embarrassed* I am a little shy.", bot)
+    response, actions = VrchatAI.action_stripper("*embarrassed* I am a little shy.", bot)
     print(response)
     await asyncio.sleep(1)
-    response, actions = vrchat_ai.action_stripper("*scared* Ahhhhh", bot)
+    response, actions = VrchatAI.action_stripper("*scared* Ahhhhh", bot)
     print(response)
     await asyncio.sleep(1)
-    response, actions = vrchat_ai.action_stripper("*alert* I am watching you.", bot)
+    response, actions = VrchatAI.action_stripper("*alert* I am watching you.", bot)
     print(response)
     await asyncio.sleep(1)
-    response, actions = vrchat_ai.action_stripper("*happy* I am happy to see you", bot)
+    response, actions = VrchatAI.action_stripper("*happy* I am happy to see you", bot)
     print(response)
 
 class VrchatTestingCog(commands.Cog):
@@ -56,7 +56,7 @@ class VrchatTestingCog(commands.Cog):
     # Command to make the bot join a voice channel
     @commands.command(name="emotetest")
     async def emotetest(self, ctx):
-        await actions_tester()
+        await actions_tester(self.tai_bot)
 
     @commands.command(name="teststart")
     async def teststart(
@@ -77,7 +77,7 @@ class VrchatTestingCog(commands.Cog):
         response = await self.tai_bot.send_msg(to_send)
 
         # Strips any actions to do from the reponse and sets them as separate lambdas
-        response, actions = vrchat_ai.action_stripper(msg=response, bot=self.tai_bot)
+        response, actions = VrchatAI.action_stripper(msg=response, bot=self.tai_bot)
         print("response: " + response)
 
         # Generates audio file, then speaks the audio file through Discord channel
@@ -106,12 +106,12 @@ class VrchatTestingCog(commands.Cog):
             print("ttfcb: "+transcribed_text_from_cb)
             print("t_s: "+to_send)
             response = await self.tai_bot.send_msg(to_send)
-            response, actions = vrchat_ai.action_stripper(msg=response, bot=self.tai_bot)
+            response, actions = VrchatAI.action_stripper(msg=response, bot=self.tai_bot)
             print("response: " + response)
 
             path_to_voice, file_length = self.tai_bot.create_voice(response)
             print(path_to_voice)
-            vrchat_ai.action_looper(actions)
+            VrchatAI.action_looper(actions)
             source = FFmpegPCMAudio(path_to_voice)
             player = vc.play(source)
             await asyncio.sleep(file_length)
