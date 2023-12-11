@@ -40,6 +40,7 @@ LISTEN_FOR = 10 # How long the bot should listen for
 transcribed_text_from_cb = ""
 
 def wink(bot):
+
     keyboard.press("left shift")
     keyboard.press("f5")
     time.sleep(0.1)
@@ -73,6 +74,7 @@ def action_stripper(msg, bot):
     functions_to_call = []
     print("message received: " + msg)
     words_to_check = {"*happy*": "f1", "*exasperated*": "f2", "*blush*": "f3", "*derp*": "f4", "*wink*": "", "*embarrassed*": "f6", "*scared*": "f7", "*alert*": "f8"}
+
     msg_lower = msg.lower()
     for word, fun_key in words_to_check.items():
         if word == "*wink*":
@@ -122,6 +124,7 @@ class VrchatAI(commands.Cog):
         # Use this for testing to not waste money:
         path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
         action_looper(actions) # Perform actions after audio generation, but before 'speaking'
+
         source = FFmpegPCMAudio(path)
         player = vc.play(source)
         await asyncio.sleep(file_length)
