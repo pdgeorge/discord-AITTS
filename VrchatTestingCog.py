@@ -1,12 +1,6 @@
-import discord
 from discord.ext import commands
-from discord import FFmpegPCMAudio
-from discord.commands import ApplicationContext
-import asyncio
 import VrchatAI
-from bot_openai import OpenAI_Bot
-from pydub import AudioSegment
-import speech_recognition as sr
+import time
 
 # For testing the main runner.
 
@@ -46,12 +40,11 @@ async def actions_tester(bot):
     await asyncio.sleep(1)
     response, actions = VrchatAI.action_stripper("*happy* I am happy to see you", bot)
     print(response)
+    vrchat_ai.action_looper(actions)
 
 class VrchatTestingCog(commands.Cog):
-    def __init__(self, discord_bot):
-                print("VRCTC Loaded")
-                self.discord_bot = discord_bot
-                self.tai_bot = OpenAI_Bot(BOT_NAME, SYSTEM_MESSAGE)
+    def __init__(self, bot):
+                 self.bot = bot
 
     # Command to make the bot join a voice channel
     @commands.command(name="emotetest")

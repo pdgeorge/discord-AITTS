@@ -20,7 +20,7 @@ TTS_DIR = "./outputs/"
 COLAB_PARTNER = "pdgeorge" # For when there is a colab partner, enter the name here.
 DEFAULT_NAME = "TAI" # Which personality is being loaded
 MESSAGE_CHANCE = 5 # Chance for user name to be included in the message, 1 in MESSAGE_CHANGE
-SYSTEM_MESSAGE = """You are Princess Zelda from the Nintendo game Legend of Zelda. On top of your regular personality, you are a typical "Valley Girl". You will be asked questions, or given statements and you will respond according to your personality. When you respond, you will respond in the form of a Tweet, roughly 255 characters. Please remember to stay Family Friendly and Safe For Work. You occasionally reference things that are inside of the Legend of Zelda universe, but you are always positive such as lonlon milk, Link, Ganon, Korok's, etc."""
+SYSTEM_MESSAGE = "You are an AI designed to play Roleplaying games with other AI."
 WAKE_UP_MESSAGE = "It's time to wake up."
 APIKEY = os.getenv("OPENAI_API_KEY")
 USER_ID = os.getenv("PLAY_HT_USER_ID")
@@ -101,6 +101,7 @@ class OpenAI_Bot():
         self.wink_flag = False
         self.last_emote = "f1"
 
+
         self.start_datetime = datetime.datetime.now()
         path = normalise_dir(TEXT_DIR)
         temp_bot_file = f"{self.bot_name}.txt"
@@ -138,6 +139,9 @@ class OpenAI_Bot():
         to_send['role'] = 'user'
         to_send['content'] = data_to_give
         self.chat_message = to_send
+
+        print("chat message is: ")
+        print(to_send)
 
         self.chat_history.append(self.chat_message)
         try:
@@ -287,12 +291,6 @@ def scan_audio_devices():
 
 async def testing_main():
     test_bot = OpenAI_Bot(DEFAULT_NAME, SYSTEM_MESSAGE)
-
-    response = await test_bot.send_msg("Where have you travelled?")
-    path, duration = test_bot.create_voice(response)
-    print(response)
-    test_bot.read_message(path)
-    await asyncio.sleep(duration)
 
     # results = await test_bot.discord_colab(10)
     # print(results)
