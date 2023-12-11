@@ -199,4 +199,4 @@ async def mp3_to_wav(path):
 
 
 def setup(discord_bot):
-        discord_bot.add_cog(VrchatAI(discord_bot))
+    discord_bot.add_cog(VrchatAI(discord_bot))
