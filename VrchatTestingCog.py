@@ -1,5 +1,6 @@
 import asyncio
 import discord
+from bot_openai import OpenAI_Bot
 from discord import FFmpegPCMAudio
 from discord.ext import commands
 from discord.commands import ApplicationContext
@@ -8,8 +9,6 @@ from pydub import AudioSegment
 import speech_recognition as sr
 
 # For testing the main runner.
-
-# TODO: Create self.TAI
 
 LISTEN_FOR = 10
 BOT_NAME = "TAI"
@@ -49,11 +48,13 @@ async def actions_tester(bot):
 
 class VrchatTestingCog(commands.Cog):
     def __init__(self, bot):
-                 self.bot = bot
+                self.bot = bot
+                self.tai_bot = OpenAI_Bot(BOT_NAME, SYSTEM_MESSAGE)
 
     # Command to make the bot join a voice channel
     @commands.command(name="emotetest")
     async def emotetest(self, ctx):
+        print("Enter emote test")
         await actions_tester(self.tai_bot)
 
     @commands.command(name="teststart")
@@ -156,4 +157,6 @@ async def mp3_to_wav(path):
     return new_path
 
 def setup(discord_bot):
-        discord_bot.add_cog(VrchatTestingCog(discord_bot))
+    print("Setup start det")
+    discord_bot.add_cog(VrchatTestingCog(discord_bot))
+    print("Setup end det")
