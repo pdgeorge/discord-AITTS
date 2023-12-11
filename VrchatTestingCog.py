@@ -1,6 +1,11 @@
+import asyncio
+import discord
+from discord import FFmpegPCMAudio
 from discord.ext import commands
+from discord.commands import ApplicationContext
 import VrchatAI
-import time
+from pydub import AudioSegment
+import speech_recognition as sr
 
 # For testing the main runner.
 
@@ -40,7 +45,7 @@ async def actions_tester(bot):
     await asyncio.sleep(1)
     response, actions = VrchatAI.action_stripper("*happy* I am happy to see you", bot)
     print(response)
-    vrchat_ai.action_looper(actions)
+    VrchatAI.action_looper(actions)
 
 class VrchatTestingCog(commands.Cog):
     def __init__(self, bot):
