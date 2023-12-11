@@ -118,9 +118,9 @@ class VrchatAI(commands.Cog):
         print("response: " + response)
 
         # Generates audio file, then speaks the audio file through Discord channel
-        path, file_length = await self.detsy_bot.playHT_wav_generator(response)
+        # path, file_length = await self.detsy_bot.playHT_wav_generator(response)
         # Use this for testing to not waste money:
-        # path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
+        path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
         action_looper(actions) # Perform actions after audio generation, but before 'speaking'
         source = FFmpegPCMAudio(path)
         player = vc.play(source)
@@ -143,11 +143,8 @@ class VrchatAI(commands.Cog):
             to_send = transcribed_text_from_cb
             print("ttfcb: "+transcribed_text_from_cb)
             print("t_s: "+to_send)
-            await ctx.send(to_send)
             response = await self.detsy_bot.send_msg(to_send)
-            await ctx.send(response)
             response, actions = action_stripper(msg=response, bot=self.detsy_bot)
-            await ctx.send(response)
 
             # Generates audio file, then speaks the audio file through Discord channel
             path_to_voice, file_length = await self.detsy_bot.playHT_wav_generator(response)
@@ -159,6 +156,7 @@ class VrchatAI(commands.Cog):
             player = vc.play(source)
             await asyncio.sleep(file_length)
             source.cleanup()
+            sink = None
 
 async def finished_callback(sink, channel: discord.TextChannel, *args):
     global transcribed_text_from_cb
