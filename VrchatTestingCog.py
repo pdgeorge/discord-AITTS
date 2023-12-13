@@ -9,7 +9,6 @@ from pydub import AudioSegment
 import speech_recognition as sr
 
 # For testing the main runner.
-
 LISTEN_FOR = 10
 BOT_NAME = "TAI"
 WAKE_UP_MESSAGE = f"Hello {BOT_NAME}."
@@ -58,6 +57,7 @@ class VrchatTestingCog(commands.Cog):
         await actions_tester(self.tai_bot)
 
     @commands.command(name="teststart")
+    @commands.has_role('Orange-People')
     async def teststart(
         self, ctx: ApplicationContext
     ):

@@ -1,3 +1,4 @@
+import json
 import keyboard
 import asyncio
 from bot_openai import OpenAI_Bot
@@ -27,15 +28,12 @@ import speech_recognition as sr
 # TODO: Add Wink Detection (If wink, add wink_flag to bot. Have a wink_flag checker that will *wink* if wink_flag == True)
 # ^^ !DONE! ^^
 # TODO: Add protections to only allow certain people to use commands
-# TODO: Place SYSTEM_MESSAGE and WAKE_UP_MESSAGE into external file
+# ^^ !DONE! ^^ "Orange-People" role
+# TODO: Place system_message and wake_up_message into external file
 # QUESTION: Does the play.ht manifest path need to be an init param?
+# Answer: Yes !DONE!
 
-BOT_NAME = "Detsy"
-SYSTEM_MESSAGE = "You are a streamer on Twitch known as Detsy. You are funny and friendly. You primarily play V-R-Chat. You are most known for being a 'Mint' (a small, short, cute, femboy avatar that must never be lewded). People accuse you of being the 'ERP king' but you refute those allegations, maintaining that you are wholesome. You will even say 'Do not lewd the Mint'. You do not stream for money or glory, you only stream for friendship. You will begin sentences with the following depending on the emotion you want to portray: *happy* if you want to be happy, *exasperated* if you are exasperated, *blush* for when you want to blush, *derp* for when you are confused, *embarrassed* if you are embarrassed, *scared* if you are scared, *alert* if something grabs your attention. Finally, you can *wink* whenever you want if you want to, but try not to over do it. Most importantly, please only respond with one sentence at a time!"
-WAKE_UP_MESSAGE = f"Hello {BOT_NAME}, are you ready to start streaming?"
 LISTEN_FOR = 10 # How long the bot should listen for
-
-# DISCORD_TOKEN = os.environ.get('CYRA_DISCORD')
 
 transcribed_text_from_cb = ""
 
@@ -87,15 +85,30 @@ def action_stripper(msg, bot):
 
 class VrchatAI(commands.Cog):
     def __init__(self, discord_bot):
+        bot_name = None
+        system_message = None
+        self.wake_up_message = None
+        voice = None
+
+        load_from = "vrchat_ai.txt"
+        with open(load_from, 'r') as f:
+            data = json.load(f)
+        if data:
+            bot_name = data["bot_name"]
+            system_message = data["system_message"]
+            self.wake_up_message = data["wake_up_message"]
+            voice = data["voice"]
         self.discord_bot = discord_bot
-        self.detsy_bot = OpenAI_Bot(BOT_NAME, SYSTEM_MESSAGE)
+        self.vrchat_bot = OpenAI_Bot(bot_name, system_message, voice=voice)
 
     # Command to load the bots "last" chat history in the event of a crash.
     @commands.command(name='load')
+    @commands.has_role('Orange-People')
     async def load(self, ctx):
-        self.detsy_bot.load_from_file(self.detsy_bot.bot_file)
+        self.vrchat_bot.load_from_file(self.vrchat_bot.bot_file)
 
     @commands.command()
+    @commands.has_role('Orange-People')
     async def start(
         self, ctx: ApplicationContext
     ):
@@ -108,22 +121,25 @@ class VrchatAI(commands.Cog):
         vc = await voice.channel.connect()
         self.discord_bot.connections.update({ctx.guild.id: vc})
 
-        to_send = WAKE_UP_MESSAGE
+        to_send = self.wake_up_message
         
         # Generates the text from bot
-        response = await self.detsy_bot.send_msg(to_send)
+        response = await self.vrchat_bot.send_msg(to_send)
 
         # Strips any actions to do from the reponse and sets them as separate lambdas
-        response, actions = action_stripper(msg=response, bot=self.detsy_bot)
+        response, actions = action_stripper(msg=response, bot=self.vrchat_bot)
         print("response: " + response)
 
         # Generates audio file, then speaks the audio file through Discord channel
-        path, file_length = await self.detsy_bot.playHT_wav_generator(response)
+        path, file_length = await self.vrchat_bot.playHT_wav_generator(response)
         # Use this for testing to not waste money:
         # path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
         action_looper(actions) # Perform actions after audio generation, but before 'speaking'
         source = FFmpegPCMAudio(path)
         player = vc.play(source)
+        if self.vrchat_bot.wink_flag == True:
+            wink(self.vrchat_bot)
+            self.vrchat_bot.wink_flag = False
         await asyncio.sleep(file_length)
         ################################### INTRO FINISHED BEGIN RECORDING
         while True:
@@ -143,11 +159,11 @@ class VrchatAI(commands.Cog):
             to_send = transcribed_text_from_cb
             print("ttfcb: "+transcribed_text_from_cb)
             print("t_s: "+to_send)
-            response = await self.detsy_bot.send_msg(to_send)
-            response, actions = action_stripper(msg=response, bot=self.detsy_bot)
+            response = await self.vrchat_bot.send_msg(to_send)
+            response, actions = action_stripper(msg=response, bot=self.vrchat_bot)
 
             # Generates audio file, then speaks the audio file through Discord channel
-            path_to_voice, file_length = await self.detsy_bot.playHT_wav_generator(response)
+            path_to_voice, file_length = await self.vrchat_bot.playHT_wav_generator(response)
             # Use this for testing to not waste money:
             # path_to_voice, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
             print(path_to_voice)
@@ -156,6 +172,9 @@ class VrchatAI(commands.Cog):
             player = vc.play(source)
             await asyncio.sleep(file_length)
             source.cleanup()
+            if self.vrchat_bot.wink_flag == True:
+                wink(self.vrchat_bot)
+                self.vrchat_bot.wink_flag = False
 
 async def finished_callback(sink, channel: discord.TextChannel, *args):
     global transcribed_text_from_cb

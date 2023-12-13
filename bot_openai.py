@@ -94,13 +94,12 @@ def speech_listener(listen_for):
     return transcription
 
 class OpenAI_Bot():
-    def __init__(self, bot_name, system_message):
+    def __init__(self, bot_name, system_message, voice=None):
         self.chat_history = []
         self.bot_name = bot_name
-        self.voice = """s3://voice-cloning-zero-shot/900b9c8f-d12e-46b5-acc2-3d60b56351d9/detsyvr/manifest.json"""
+        self.voice = voice
         self.wink_flag = False
         self.last_emote = "f1"
-
 
         self.start_datetime = datetime.datetime.now()
         path = normalise_dir(TEXT_DIR)
