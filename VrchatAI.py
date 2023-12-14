@@ -100,6 +100,7 @@ class VrchatAI(commands.Cog):
             voice = data["voice"]
         self.discord_bot = discord_bot
         self.vrchat_bot = OpenAI_Bot(bot_name, system_message, voice=voice)
+        self.looping = False
 
     # Command to load the bots "last" chat history in the event of a crash.
     @commands.command(name='load')
@@ -109,9 +110,16 @@ class VrchatAI(commands.Cog):
 
     @commands.command()
     @commands.has_role('Orange-People')
+    async def stop(self, ctx: ApplicationContext):
+        self.looping = False
+        await ctx.channel.send("Stopping looping")
+
+    @commands.command()
+    @commands.has_role('Orange-People')
     async def start(
         self, ctx: ApplicationContext
     ):
+        self.looping = True
         global transcribed_text_from_cb
         channel = ctx.channel
         voice = ctx.author.voice
@@ -142,8 +150,7 @@ class VrchatAI(commands.Cog):
             self.vrchat_bot.wink_flag = False
         await asyncio.sleep(file_length)
         ################################### INTRO FINISHED BEGIN RECORDING
-        while True:
-
+        while self.looping == True:
             print("Begining rec")
             sink = discord.sinks.MP3Sink()
             vc.start_recording(
