@@ -33,6 +33,8 @@ import speech_recognition as sr
 # QUESTION: Does the play.ht manifest path need to be an init param?
 # Answer: Yes !DONE!
 
+# TODO: Improve listener functionality to be able to listen accurately to multiple users in one call
+
 LISTEN_FOR = 10 # How long the bot should listen for
 
 transcribed_text_from_cb = ""
@@ -196,6 +198,8 @@ async def finished_callback(sink, channel: discord.TextChannel, *args):
             file.write(audio.file.read())
             await asyncio.sleep(0.5)
         file_path = await mp3_to_wav(file_path)
+
+        # This is only good for ONE USER AT A TIME. Would need to be updated to include multiple users at a time.
         transcribed_text_from_cb = await transcribe_audio(file_path, channel, user_id)
         print("ttfcb in f_c: "+transcribed_text_from_cb)
 
@@ -214,8 +218,12 @@ async def transcribe_audio(file_path, channel: discord.TextChannel, user_id):
         return transcribed_text
     except sr.UnknownValueError:
         await channel.send(f"Unable to transcribe audio for <@{user_id}>. Speech Recognition could not understand the audio.")
+        transcribed_text = "Sorry I have nothing to say"
+        return transcribed_text
     except sr.RequestError as e:
         await channel.send(f"Unable to transcribe audio for <@{user_id}>. Error with the Speech Recognition service: {e}")
+        transcribed_text = "Sorry I have nothing to say"
+        return transcribed_text
 
 async def mp3_to_wav(path):
     sound = AudioSegment.from_mp3(path)
