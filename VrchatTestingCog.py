@@ -14,6 +14,8 @@ BOT_NAME = "TAI"
 WAKE_UP_MESSAGE = f"Hello {BOT_NAME}."
 SYSTEM_MESSAGE = "You are a test AI that helps test programs. You will respond sometimes with the following actions at the start of your message: *happy*, *exasperated*, *blush*, *derp*, *embarrassed*, *scared*, *alert*, *wink*"
 
+transcribed_text_from_cb = ""
+
 async def actions_tester(bot):
     await asyncio.sleep(5)
     response, actions = VrchatAI.action_stripper("*happy* I am happy to see you", bot)
@@ -47,14 +49,21 @@ async def actions_tester(bot):
 
 class VrchatTestingCog(commands.Cog):
     def __init__(self, bot):
-                self.bot = bot
-                self.tai_bot = OpenAI_Bot(BOT_NAME, SYSTEM_MESSAGE)
+        self.bot = bot
+        self.tai_bot = OpenAI_Bot(BOT_NAME, SYSTEM_MESSAGE)
+        self.looping = False
 
     # Command to make the bot join a voice channel
     @commands.command(name="emotetest")
     async def emotetest(self, ctx):
         print("Enter emote test")
         await actions_tester(self.tai_bot)
+
+    @commands.command()
+    @commands.has_role('Orange-People')
+    async def teststop(self, ctx: ApplicationContext):
+        self.looping = False
+        await ctx.channel.send("Stopping looping")
 
     @commands.command(name="teststart")
     @commands.has_role('Orange-People')
@@ -87,7 +96,7 @@ class VrchatTestingCog(commands.Cog):
         player = vc.play(source)
         await asyncio.sleep(file_length)
         ################################### INTRO FINISHED BEGIN RECORDING
-        while True:
+        while self.looping == True:
 
             print("Begining rec")
             sink = discord.sinks.MP3Sink()
