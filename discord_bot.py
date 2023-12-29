@@ -17,6 +17,7 @@ async def on_ready():
 async def ping(ctx):
     print(f"pong")
     print(f"Bot command prefix: {ctx.prefix}")
+    await ctx.channel.send("pong")
 
 discord_bot.load_extension("VrchatTestingCog")
 discord_bot.load_extension("VrchatAI")
