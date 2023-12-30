@@ -14,6 +14,8 @@ import sounddevice as sd
 from pydub import AudioSegment
 import time
 import math
+import requests
+import base64
 
 TEXT_DIR = "./"
 TTS_DIR = "./outputs/"
@@ -25,6 +27,7 @@ WAKE_UP_MESSAGE = "It's time to wake up."
 APIKEY = os.getenv("OPENAI_API_KEY")
 USER_ID = os.getenv("PLAY_HT_USER_ID")
 API_KEY = os.getenv("PLAY_HT_API_KEY")
+TIKTOK_TOKEN = os.getenv("TIKTOK_TOKEN")
 
 client = AsyncOpenAI(
     api_key=os.getenv("OPENAI_API_KEY")
@@ -283,6 +286,49 @@ class OpenAI_Bot():
         print(filepath)
         return filepath, file_length
 
+    async def tttts(self, session_id: str, text_speaker: str = "en_us_002", req_text: str = "TikTok Text To Speech", filename: str = 'voice.mp3', play: bool = False):
+        req_text = req_text.replace("+", "plus")
+        req_text = req_text.replace(" ", "+")
+        req_text = req_text.replace("&", "and")
+
+        headers = {
+            'User-Agent': 'com.zhiliaoapp.musically/2022600030 (Linux; U; Android 7.1.2; es_ES; SM-G988N; Build/NRD90M;tt-ok/3.12.13.1)',
+            'Cookie': f'sessionid={session_id}'
+        }
+        url = f"https://api16-normal-v6.tiktokv.com/media/api/text/speech/invoke/?text_speaker={text_speaker}&req_text={req_text}&speaker_map_type=0&aid=1233"
+        r = requests.post(url, headers = headers)
+
+        if r.json()["message"] == "Couldn't load speech. Try again.":
+            output_data = {"status": "Session ID is invalid", "status_code": 5}
+            print(output_data)
+            return output_data
+
+        vstr = [r.json()["data"]["v_str"]][0]
+        msg = [r.json()["message"]][0]
+        scode = [r.json()["status_code"]][0]
+        log = [r.json()["extra"]["log_id"]][0]
+        
+        dur = [r.json()["data"]["duration"]][0]
+        spkr = [r.json()["data"]["speaker"]][0]
+
+        b64d = base64.b64decode(vstr)
+
+        with open(filename, "wb") as out:
+            out.write(b64d)
+
+        output_data = {
+            "status": msg.capitalize(),
+            "status_code": scode,
+            "duration": dur,
+            "speaker": spkr,
+            "log": log
+        }
+
+        opus_file_path, duration = self.mp3_to_opus(filename)
+        rounded_duration = math.ceil(duration)
+
+        return opus_file_path, rounded_duration
+
 def scan_audio_devices():
     devices = sd.query_devices()
     for i, device in enumerate(devices):
@@ -290,6 +336,19 @@ def scan_audio_devices():
 
 async def testing_main():
     test_bot = OpenAI_Bot(DEFAULT_NAME, SYSTEM_MESSAGE)
+
+    filename = "implementation_test.mp3"
+    current_dir = os.getcwd()
+    print(current_dir)
+    newpath = os.path.normpath(os.path.join(current_dir, "./TikToks"))
+    print(newpath)
+    normalised_filename = os.path.normpath(os.path.join(newpath, filename))
+    print(normalised_filename)
+    opus_filename, duration = await test_bot.tttts(TIKTOK_TOKEN, 'en_us_stormtrooper', "I am a stormtrooper talking from Tik Tok to Twitch. TikTok Twitch To Speech Sample.", normalised_filename)
+    print(opus_filename)
+    test_bot.read_message(opus_filename)
+    await asyncio.sleep(duration)
+    print("Done")
 
     # results = await test_bot.discord_colab(10)
     # print(results)
