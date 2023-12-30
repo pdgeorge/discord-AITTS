@@ -35,7 +35,7 @@ import speech_recognition as sr
 
 # TODO: Improve listener functionality to be able to listen accurately to multiple users in one call
 
-LISTEN_FOR = 10 # How long the bot should listen for
+LISTEN_FOR = 30 # How long the bot should listen for
 
 transcribed_text_from_cb = ""
 
@@ -92,7 +92,7 @@ class VrchatAI(commands.Cog):
         self.wake_up_message = None
         voice = None
 
-        load_from = "vrchat_ai.txt"
+        load_from = "vrchat_ai.json"
         with open(load_from, 'r') as f:
             data = json.load(f)
         if data:
@@ -185,6 +185,35 @@ class VrchatAI(commands.Cog):
                 wink(self.vrchat_bot)
                 self.vrchat_bot.wink_flag = False
 
+    @commands.command()
+    @commands.has_role('Orange-People')
+    async def loadPersona(self, ctx, persona):
+        load_from = "vrchat_ais.json"
+        with open(load_from, 'r') as f:
+            data = json.load(f)
+        if data:
+            persona_data = next(item for item in data if item["bot_name"] == persona)
+            if persona_data:
+                with open('vrchat_ai.json', 'w+') as json_file:
+                    json.dump(persona_data, json_file, indent=2)
+                    await ctx.channel.send(f"Successfully loaded {persona}")
+                    self.bot_name = data["bot_name"]
+                    self.system_message = data["system_message"]
+                    self.wake_up_message = data["wake_up_message"]
+                    self.voice = data["voice"]
+            else:
+                await ctx.channel.send(f"Unable to load {persona} please use !checkPersona to check Personas")
+
+    @commands.command()
+    @commands.has_role('Orange-People')
+    async def checkPersona(self, ctx):
+        load_from = "vrchat_ais.json"
+        with open(load_from, 'r') as f:
+            data = json.load(f)
+        if data:
+            for item in data:
+                await ctx.channel.send(f'This persona is available: {item["bot_name"]}')
+
 async def finished_callback(sink, channel: discord.TextChannel, *args):
     global transcribed_text_from_cb
     recorded_users = [f"<@{user_id}>" for user_id, audio in sink.audio_data.items()]
@@ -230,7 +259,6 @@ async def mp3_to_wav(path):
     new_path = path+".wav"
     sound.export(new_path, format="wav")
     return new_path
-
 
 def setup(discord_bot):
     discord_bot.add_cog(VrchatAI(discord_bot))
