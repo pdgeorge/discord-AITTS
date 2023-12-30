@@ -7,12 +7,16 @@ from discord.commands import ApplicationContext
 import VrchatAI
 from pydub import AudioSegment
 import speech_recognition as sr
+import os
+import time
 
 # For testing the main runner.
 LISTEN_FOR = 10
 BOT_NAME = "TAI"
 WAKE_UP_MESSAGE = f"Hello {BOT_NAME}."
 SYSTEM_MESSAGE = "You are a test AI that helps test programs. You will respond sometimes with the following actions at the start of your message: *happy*, *exasperated*, *blush*, *derp*, *embarrassed*, *scared*, *alert*, *wink*"
+TIKTOK_TOKEN = os.getenv("TIKTOK_TOKEN")
+TIKTOK_VOICE = "en_us_stormtrooper"
 
 transcribed_text_from_cb = ""
 
@@ -70,6 +74,7 @@ class VrchatTestingCog(commands.Cog):
     async def teststart(
         self, ctx: ApplicationContext
     ):
+        self.looping = True
         global transcribed_text_from_cb
         channel = ctx.channel
         voice = ctx.author.voice
@@ -89,12 +94,17 @@ class VrchatTestingCog(commands.Cog):
         print("response: " + response)
 
         # Generates audio file, then speaks the audio file through Discord channel
-        path, file_length = self.tai_bot.create_voice(response)
+        tttts_filename = f"{self.tai_bot.bot_name}_{int(time.time())}"
+        tttts_path = await path_for_tttts(tttts_filename)
+        path_to_voice, file_length = await self.tai_bot.tttts(TIKTOK_TOKEN, TIKTOK_VOICE, response, tttts_path)
         # Use this for testing to not waste money:
         # path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
-        source = FFmpegPCMAudio(path)
+        print(path_to_voice)
+        print(file_length)
+        source = FFmpegPCMAudio(path_to_voice)
         player = vc.play(source)
         await asyncio.sleep(file_length)
+        print("After the last await?")
         ################################### INTRO FINISHED BEGIN RECORDING
         while self.looping == True:
 
@@ -117,8 +127,12 @@ class VrchatTestingCog(commands.Cog):
             response, actions = VrchatAI.action_stripper(msg=response, bot=self.tai_bot)
             print("response: " + response)
 
-            path_to_voice, file_length = self.tai_bot.create_voice(response)
+            tttts_filename = f"{self.tai_bot.bot_name}_{int(time.time())}"
+            tttts_path = await path_for_tttts(tttts_filename)
+            path_to_voice, file_length = await self.tai_bot.tttts(TIKTOK_TOKEN, TIKTOK_VOICE, response, tttts_path)
+            
             print(path_to_voice)
+            print(file_length)
             VrchatAI.action_looper(actions)
             source = FFmpegPCMAudio(path_to_voice)
             player = vc.play(source)
@@ -164,6 +178,13 @@ async def mp3_to_wav(path):
     new_path = path+".wav"
     sound.export(new_path, format="wav")
     return new_path
+
+async def path_for_tttts(path_to_ttttsify):
+    filename = path_to_ttttsify
+    current_dir = os.getcwd()
+    newpath = os.path.normpath(os.path.join(current_dir, "./TikToks"))
+    normalised_filename = os.path.normpath(os.path.join(newpath, filename))
+    return normalised_filename
 
 def setup(discord_bot):
     discord_bot.add_cog(VrchatTestingCog(discord_bot))
