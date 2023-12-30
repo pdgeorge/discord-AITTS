@@ -9,9 +9,11 @@ from pydub import AudioSegment
 import speech_recognition as sr
 import os
 import time
+import random
 
 # For testing the main runner.
-LISTEN_FOR = 10
+LISTEN_FOR = 30
+CHEWBACCA_CHANCE = 100
 BOT_NAME = "TAI"
 WAKE_UP_MESSAGE = f"Hello {BOT_NAME}."
 SYSTEM_MESSAGE = "You are a test AI that helps test programs. You will respond sometimes with the following actions at the start of your message: *happy*, *exasperated*, *blush*, *derp*, *embarrassed*, *scared*, *alert*, *wink*"
@@ -96,7 +98,12 @@ class VrchatTestingCog(commands.Cog):
         # Generates audio file, then speaks the audio file through Discord channel
         tttts_filename = f"{self.tai_bot.bot_name}_{int(time.time())}"
         tttts_path = await path_for_tttts(tttts_filename)
-        path_to_voice, file_length = await self.tai_bot.tttts(TIKTOK_TOKEN, TIKTOK_VOICE, response, tttts_path)
+
+        tiktok_voice_to_use = TIKTOK_VOICE
+        if random.randint(1, CHEWBACCA_CHANCE) == 1:
+            tiktok_voice_to_use = "en_us_chewbacca"
+
+        path_to_voice, file_length = await self.tai_bot.tttts(TIKTOK_TOKEN, tiktok_voice_to_use, response, tttts_path)
         # Use this for testing to not waste money:
         # path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
         print(path_to_voice)
@@ -129,7 +136,12 @@ class VrchatTestingCog(commands.Cog):
 
             tttts_filename = f"{self.tai_bot.bot_name}_{int(time.time())}"
             tttts_path = await path_for_tttts(tttts_filename)
-            path_to_voice, file_length = await self.tai_bot.tttts(TIKTOK_TOKEN, TIKTOK_VOICE, response, tttts_path)
+
+            tiktok_voice_to_use = TIKTOK_VOICE
+            if random.randint(1, CHEWBACCA_CHANCE) == 1:
+                tiktok_voice_to_use = "en_us_chewbacca"
+
+            path_to_voice, file_length = await self.tai_bot.tttts(TIKTOK_TOKEN, tiktok_voice_to_use, response, tttts_path)
             
             print(path_to_voice)
             print(file_length)
