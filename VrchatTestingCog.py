@@ -71,6 +71,45 @@ class VrchatTestingCog(commands.Cog):
         self.looping = False
         await ctx.channel.send("Stopping looping")
 
+    @commands.command(name="tspeak")
+    @commands.has_role('Orange-People')
+    async def tspeak(self, ctx: ApplicationContext, *, to_speak):
+        self.looping = True
+        global transcribed_text_from_cb
+        channel = ctx.channel
+        voice = ctx.author.voice
+        vc = None
+
+        if not voice:
+            return await channel.send("You're not in a vc right now")
+        if not ctx.voice_client:
+            vc = await voice.channel.connect()
+        else:
+            vc = ctx.voice_client
+        print(ctx.voice_client)
+        self.bot.connections.update({ctx.guild.id: vc})
+        
+        response = to_speak
+
+        # Generates audio file, then speaks the audio file through Discord channel
+        tttts_filename = f"{self.tai_bot.bot_name}_{int(time.time())}"
+        tttts_path = await path_for_tttts(tttts_filename)
+
+        tiktok_voice_to_use = TIKTOK_VOICE
+        if random.randint(1, CHEWBACCA_CHANCE) == 1:
+            tiktok_voice_to_use = "en_us_chewbacca"
+
+        print(response)
+
+        path_to_voice, file_length = await self.tai_bot.tttts(TIKTOK_TOKEN, tiktok_voice_to_use, response, tttts_path)
+        # Use this for testing to not waste money:
+        # path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
+        print(path_to_voice)
+        print(file_length)
+        source = FFmpegPCMAudio(path_to_voice)
+        player = vc.play(source)
+        await asyncio.sleep(file_length)
+
     @commands.command(name="teststart")
     @commands.has_role('Orange-People')
     async def teststart(

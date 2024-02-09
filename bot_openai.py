@@ -344,7 +344,10 @@ async def testing_main():
     print(newpath)
     normalised_filename = os.path.normpath(os.path.join(newpath, filename))
     print(normalised_filename)
-    opus_filename, duration = await test_bot.tttts(TIKTOK_TOKEN, 'en_us_stormtrooper', "I am a stormtrooper talking from Tik Tok to Twitch. TikTok Twitch To Speech Sample.", normalised_filename)
+
+    sample_text = "I am a stormtrooper talking through TikTok Text To Speech."
+
+    opus_filename, duration = await test_bot.tttts(TIKTOK_TOKEN, 'en_us_stormtrooper', sample_text, normalised_filename)
     print(opus_filename)
     test_bot.read_message(opus_filename)
     await asyncio.sleep(duration)

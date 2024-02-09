@@ -233,7 +233,7 @@ async def finished_callback(sink, channel: discord.TextChannel, *args):
         print("ttfcb in f_c: "+transcribed_text_from_cb)
 
     # await channel.send(f"Finished! Recorded audio for {', '.join(recorded_users)}.", files=files)
-    await channel.send(f"Finished! Recorded audio for {', '.join(recorded_users)}.")
+    # await channel.send(f"Finished! Recorded audio for {', '.join(recorded_users)}.")
 
 async def transcribe_audio(file_path, channel: discord.TextChannel, user_id):
     print("t_a: "+file_path)
