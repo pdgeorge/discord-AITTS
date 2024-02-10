@@ -108,11 +108,52 @@ class VrchatAI(commands.Cog):
         self.discord_bot = discord_bot
         self.vrchat_bot = OpenAI_Bot(bot_name, system_message, voice=voice)
         self.looping = False
+        self.aitts = False
+
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        # Check if the message was sent by the bot itself to avoid reacting to its own messages
+        if message.author == self.discord_bot.user:
+            return
+        
+        ctx = await self.discord_bot.get_context(message)
+
+        vc = discord.utils.get(self.discord_bot.voice_clients, guild=message.guild)
+        if vc:
+            print(f"currently in: {vc.channel.name}") ## THIS
+        print(message.channel.name) ## MUST MATCH THIS
+
+        if (vc.channel.name == message.channel.name) and not (message.content[0] == "!"):
+            if self.aitts:
+                print("kool")
+                await self.aispeak(ctx, to_speak = message.content)
+            elif self.aitts == False:
+                print("not kool")
+                await self.speak(ctx, to_speak = message.content)
+
+        # # React to the message by adding a reaction
+        # await message.add_reaction("👍")  # You can replace "👍" with any emoji you like
+        # print(message.channel.name)
 
     # Command to make the bot join a voice channel
     @commands.command(name="join")
     async def join(self, ctx):
+        self.aitts = False
         vc = None
+        if not ctx.author.voice:
+            return await ctx.channel.send("You're not in a vc right now")
+        if not ctx.voice_client:
+            vc = await ctx.author.voice.channel.connect()
+        else:
+            vc = ctx.voice_client
+        self.discord_bot.connections.update({ctx.guild.id: vc})
+
+    # Command to make the bot join a voice channel
+    @commands.command(name="aijoin")
+    async def aijoin(self, ctx):
+        self.aitts = True
+        vc = None
+
         if not ctx.author.voice:
             return await ctx.channel.send("You're not in a vc right now")
         if not ctx.voice_client:
@@ -229,26 +270,6 @@ class VrchatAI(commands.Cog):
             for item in data:
                 await ctx.channel.send(f'This persona is available: {item["bot_name"]}')
 
-    @commands.Cog.listener()
-    async def on_message(self, message):
-        # Check if the message was sent by the bot itself to avoid reacting to its own messages
-        if message.author == self.discord_bot.user:
-            return
-
-        vc = discord.utils.get(self.discord_bot.voice_clients, guild=message.guild)
-        if vc:
-            print(f"currently in {vc.channel.name}") ## THIS
-
-        print(self.discord_bot.connections)
-        print("===========")
-        print(message.channel)
-        print(message.channel.id)
-        print(message.channel.name) ## MUST MATCH THIS
-
-        # # React to the message by adding a reaction
-        # await message.add_reaction("👍")  # You can replace "👍" with any emoji you like
-        # print(message.channel.name)
-
     # Send a message to Cyra to have her speak using TikTokTextToSpeach
     @commands.command(name="speak")
     @commands.has_role('Orange-People')
@@ -291,6 +312,44 @@ class VrchatAI(commands.Cog):
         if os.path.exists(path_to_voice):
             os.remove(path_to_voice)
             print(f"{path_to_voice} removed!")
+        else:
+            print(f"Something went wrong.")
+            
+    # Send a message to Cyra to have her speak using TikTokTextToSpeach
+    @commands.command(name="aispeak")
+    @commands.has_role('Orange-People')
+    async def aispeak(self, ctx: ApplicationContext, *, to_speak):
+        self.looping = True
+        global transcribed_text_from_cb
+        channel = ctx.channel
+        voice = ctx.author.voice
+        vc = None
+
+        if not voice:
+            return await channel.send("You're not in a vc right now")
+        if not ctx.voice_client:
+            vc = await voice.channel.connect()
+        else:
+            vc = ctx.voice_client
+        print(ctx.voice_client)
+        self.discord_bot.connections.update({ctx.guild.id: vc})
+        
+        response = to_speak
+
+        # Generates audio file, then speaks the audio file through Discord channel
+
+        aitts_path, aitts_length = await self.vrchat_bot.playHT_wav_generator(response)
+
+        # Use this for testing to not waste money:
+        # path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
+
+
+        source = FFmpegPCMAudio(aitts_path)
+        player = vc.play(source)
+        await asyncio.sleep(aitts_length)
+        if os.path.exists(aitts_path):
+            os.remove(aitts_path)
+            print(f"{aitts_path} removed!")
         else:
             print(f"Something went wrong.")
 
