@@ -22,7 +22,7 @@ TTS_DIR = "./outputs/"
 COLAB_PARTNER = "pdgeorge" # For when there is a colab partner, enter the name here.
 DEFAULT_NAME = "TAI" # Which personality is being loaded
 MESSAGE_CHANCE = 5 # Chance for user name to be included in the message, 1 in MESSAGE_CHANGE
-SYSTEM_MESSAGE = "You are an AI designed to play Roleplaying games with other AI."
+SYSTEM_MESSAGE = "You are 'BasedMod', moderator of a Twitch community you really do not like. This community is a community of people who watch v-tubers. In fact you greatly enjoy roasting them. Every time that you receive a message, you give a brief, one sentence vitriolic rant about the individual and what they said before declaring that they are banned followed by an inventive way that they are banished from the internet."
 WAKE_UP_MESSAGE = "It's time to wake up."
 APIKEY = os.getenv("OPENAI_API_KEY")
 USER_ID = os.getenv("PLAY_HT_USER_ID")
@@ -337,25 +337,24 @@ def scan_audio_devices():
 async def testing_main():
     test_bot = OpenAI_Bot(DEFAULT_NAME, SYSTEM_MESSAGE)
 
-    filename = "implementation_test.mp3"
-    current_dir = os.getcwd()
-    print(current_dir)
-    newpath = os.path.normpath(os.path.join(current_dir, "./TikToks"))
-    print(newpath)
-    normalised_filename = os.path.normpath(os.path.join(newpath, filename))
-    print(normalised_filename)
+    ### Testing the TikTokTextToSpeech Section ###
+    # filename = "implementation_test.mp3"
+    # current_dir = os.getcwd()
+    # print(current_dir)
+    # newpath = os.path.normpath(os.path.join(current_dir, "./TikToks"))
+    # print(newpath)
+    # normalised_filename = os.path.normpath(os.path.join(newpath, filename))
+    # print(normalised_filename)
+    # sample_text = "I am a stormtrooper talking through TikTok Text To Speech."
+    # opus_filename, duration = await test_bot.tttts(TIKTOK_TOKEN, 'en_us_stormtrooper', sample_text, normalised_filename)
+    # print(opus_filename)
+    # test_bot.read_message(opus_filename)
+    # await asyncio.sleep(duration)
+    # print("Done")
 
-    sample_text = "I am a stormtrooper talking through TikTok Text To Speech."
-
-    opus_filename, duration = await test_bot.tttts(TIKTOK_TOKEN, 'en_us_stormtrooper', sample_text, normalised_filename)
-    print(opus_filename)
-    test_bot.read_message(opus_filename)
-    await asyncio.sleep(duration)
-    print("Done")
-
+    ### Test STT -> TTT -> basic TTS ###
     # results = await test_bot.discord_colab(10)
     # print(results)
-
     # path = await test_bot.playHT_wav_generator("I am Detsy!")
     # path = "./outputs\\tester\\_Msg589158584504913860.wav"
     # test_bot.read_message(path)
@@ -371,6 +370,29 @@ async def testing_main():
     # response = await test_bot.send_msg("Is this a THIRD message?")
     # response = speech_listener(10)
     # print(response)
+
+    ### Single message TTT version
+    msg_to_test = "Do you like beatsaber?"
+    response = await test_bot.send_msg(msg_to_test)
+    print(response)
+    test_bot.chat_history.pop()
+    test_bot.chat_history.pop()
+    print("==============================================================")
+    response = await test_bot.send_msg(msg_to_test)
+    print(response)
+    test_bot.chat_history.pop()
+    test_bot.chat_history.pop()
+    print("==============================================================")
+    response = await test_bot.send_msg(msg_to_test)
+    print(response)
+    test_bot.chat_history.pop()
+    test_bot.chat_history.pop()
+    print("==============================================================")
+    response = await test_bot.send_msg(msg_to_test)
+    print(response)
+    test_bot.chat_history.pop()
+    test_bot.chat_history.pop()
+    print("==============================================================")
 
 if __name__ == "__main__":
     asyncio.run(testing_main())
