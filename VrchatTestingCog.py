@@ -59,23 +59,10 @@ class VrchatTestingCog(commands.Cog):
         self.tai_bot = OpenAI_Bot(BOT_NAME, SYSTEM_MESSAGE)
         self.looping = False
 
-    # Command to make the bot join a voice channel
-    @commands.command(name="emotetest")
-    async def emotetest(self, ctx):
-        print("Enter emote test")
-        await actions_tester(self.tai_bot)
-
-    @commands.command()
-    @commands.has_role('Orange-People')
-    async def teststop(self, ctx: ApplicationContext):
-        self.looping = False
-        await ctx.channel.send("Stopping looping")
-
+    # Test the ability to talk with Cyra, using a generic TTS
     @commands.command(name="teststart")
     @commands.has_role('Orange-People')
-    async def teststart(
-        self, ctx: ApplicationContext
-    ):
+    async def teststart(self, ctx: ApplicationContext):
         self.looping = True
         global transcribed_text_from_cb
         channel = ctx.channel
@@ -83,8 +70,10 @@ class VrchatTestingCog(commands.Cog):
 
         if not voice:
             return await channel.send("You're not in a vc right now")
-        vc = await voice.channel.connect()
-        self.bot.connections.update({ctx.guild.id: vc})
+        if not ctx.voice_client:
+            vc = await voice.channel.connect()
+        else:
+            vc = ctx.voice_client
 
         to_send = WAKE_UP_MESSAGE
         
@@ -150,6 +139,13 @@ class VrchatTestingCog(commands.Cog):
             player = vc.play(source)
             await asyncio.sleep(file_length)
             source.cleanup()
+    
+    # Stop the test
+    @commands.command()
+    @commands.has_role('Orange-People')
+    async def teststop(self, ctx: ApplicationContext):
+        self.looping = False
+        await ctx.channel.send("Stopping looping")
 
 async def finished_callback(sink, channel: discord.TextChannel, *args):
     global transcribed_text_from_cb

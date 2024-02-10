@@ -10,6 +10,7 @@ from discord.ext import commands
 import time
 from pydub import AudioSegment
 import speech_recognition as sr
+import random
 
 # VRChat emotion -> Hotkey to use
 # *happy* -> shift+f1 (default)
@@ -38,6 +39,10 @@ import speech_recognition as sr
 LISTEN_FOR = 30 # How long the bot should listen for
 
 transcribed_text_from_cb = ""
+
+CHEWBACCA_CHANCE = 100
+TIKTOK_TOKEN = os.getenv("TIKTOK_TOKEN")
+TIKTOK_VOICE = "en_us_stormtrooper"
 
 def wink(bot):
     keyboard.press("left shift")
@@ -103,6 +108,59 @@ class VrchatAI(commands.Cog):
         self.discord_bot = discord_bot
         self.vrchat_bot = OpenAI_Bot(bot_name, system_message, voice=voice)
         self.looping = False
+        self.aitts = False
+
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        # Check if the message was sent by the bot itself to avoid reacting to its own messages
+        if message.author == self.discord_bot.user:
+            return
+        
+        ctx = await self.discord_bot.get_context(message)
+
+        vc = discord.utils.get(self.discord_bot.voice_clients, guild=message.guild)
+        if vc:
+            print(f"currently in: {vc.channel.name}") ## THIS
+        print(message.channel.name) ## MUST MATCH THIS
+
+        if (vc.channel.name == message.channel.name) and not (message.content[0] == "!"):
+            if self.aitts:
+                print("kool")
+                await self.aispeak(ctx, to_speak = message.content)
+            elif self.aitts == False:
+                print("not kool")
+                await self.speak(ctx, to_speak = message.content)
+
+        # # React to the message by adding a reaction
+        # await message.add_reaction("👍")  # You can replace "👍" with any emoji you like
+        # print(message.channel.name)
+
+    # Command to make the bot join a voice channel
+    @commands.command(name="join")
+    async def join(self, ctx):
+        self.aitts = False
+        vc = None
+        if not ctx.author.voice:
+            return await ctx.channel.send("You're not in a vc right now")
+        if not ctx.voice_client:
+            vc = await ctx.author.voice.channel.connect()
+        else:
+            vc = ctx.voice_client
+        self.discord_bot.connections.update({ctx.guild.id: vc})
+
+    # Command to make the bot join a voice channel
+    @commands.command(name="aijoin")
+    async def aijoin(self, ctx):
+        self.aitts = True
+        vc = None
+
+        if not ctx.author.voice:
+            return await ctx.channel.send("You're not in a vc right now")
+        if not ctx.voice_client:
+            vc = await ctx.author.voice.channel.connect()
+        else:
+            vc = ctx.voice_client
+        self.discord_bot.connections.update({ctx.guild.id: vc})
 
     # Command to load the bots "last" chat history in the event of a crash.
     @commands.command(name='load')
@@ -118,9 +176,7 @@ class VrchatAI(commands.Cog):
 
     @commands.command()
     @commands.has_role('Orange-People')
-    async def start(
-        self, ctx: ApplicationContext
-    ):
+    async def start(self, ctx: ApplicationContext):
         self.looping = True
         global transcribed_text_from_cb
         channel = ctx.channel
@@ -214,6 +270,89 @@ class VrchatAI(commands.Cog):
             for item in data:
                 await ctx.channel.send(f'This persona is available: {item["bot_name"]}')
 
+    # Send a message to Cyra to have her speak using TikTokTextToSpeach
+    @commands.command(name="speak")
+    @commands.has_role('Orange-People')
+    async def speak(self, ctx: ApplicationContext, *, to_speak):
+        self.looping = True
+        global transcribed_text_from_cb
+        channel = ctx.channel
+        voice = ctx.author.voice
+        vc = None
+
+        if not voice:
+            return await channel.send("You're not in a vc right now")
+        if not ctx.voice_client:
+            vc = await voice.channel.connect()
+        else:
+            vc = ctx.voice_client
+        print(ctx.voice_client)
+        self.discord_bot.connections.update({ctx.guild.id: vc})
+        
+        response = to_speak
+
+        # Generates audio file, then speaks the audio file through Discord channel
+        tttts_filename = f"{self.vrchat_bot.bot_name}_{int(time.time())}"
+        tttts_path = await path_for_tttts(tttts_filename)
+
+        tiktok_voice_to_use = TIKTOK_VOICE
+        if random.randint(1, CHEWBACCA_CHANCE) == 1:
+            tiktok_voice_to_use = "en_us_chewbacca"
+
+        print(response)
+
+        path_to_voice, file_length = await self.vrchat_bot.tttts(TIKTOK_TOKEN, tiktok_voice_to_use, response, tttts_path)
+        # Use this for testing to not waste money:
+        # path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
+        print(path_to_voice)
+        print(file_length)
+        source = FFmpegPCMAudio(path_to_voice)
+        player = vc.play(source)
+        await asyncio.sleep(file_length)
+        if os.path.exists(path_to_voice):
+            os.remove(path_to_voice)
+            print(f"{path_to_voice} removed!")
+        else:
+            print(f"Something went wrong.")
+            
+    # Send a message to Cyra to have her speak using TikTokTextToSpeach
+    @commands.command(name="aispeak")
+    @commands.has_role('Orange-People')
+    async def aispeak(self, ctx: ApplicationContext, *, to_speak):
+        self.looping = True
+        global transcribed_text_from_cb
+        channel = ctx.channel
+        voice = ctx.author.voice
+        vc = None
+
+        if not voice:
+            return await channel.send("You're not in a vc right now")
+        if not ctx.voice_client:
+            vc = await voice.channel.connect()
+        else:
+            vc = ctx.voice_client
+        print(ctx.voice_client)
+        self.discord_bot.connections.update({ctx.guild.id: vc})
+        
+        response = to_speak
+
+        # Generates audio file, then speaks the audio file through Discord channel
+
+        aitts_path, aitts_length = await self.vrchat_bot.playHT_wav_generator(response)
+
+        # Use this for testing to not waste money:
+        # path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
+
+
+        source = FFmpegPCMAudio(aitts_path)
+        player = vc.play(source)
+        await asyncio.sleep(aitts_length)
+        if os.path.exists(aitts_path):
+            os.remove(aitts_path)
+            print(f"{aitts_path} removed!")
+        else:
+            print(f"Something went wrong.")
+
 async def finished_callback(sink, channel: discord.TextChannel, *args):
     global transcribed_text_from_cb
     recorded_users = [f"<@{user_id}>" for user_id, audio in sink.audio_data.items()]
@@ -233,7 +372,7 @@ async def finished_callback(sink, channel: discord.TextChannel, *args):
         print("ttfcb in f_c: "+transcribed_text_from_cb)
 
     # await channel.send(f"Finished! Recorded audio for {', '.join(recorded_users)}.", files=files)
-    await channel.send(f"Finished! Recorded audio for {', '.join(recorded_users)}.")
+    # await channel.send(f"Finished! Recorded audio for {', '.join(recorded_users)}.")
 
 async def transcribe_audio(file_path, channel: discord.TextChannel, user_id):
     print("t_a: "+file_path)
@@ -259,6 +398,13 @@ async def mp3_to_wav(path):
     new_path = path+".wav"
     sound.export(new_path, format="wav")
     return new_path
+
+async def path_for_tttts(path_to_ttttsify):
+    filename = path_to_ttttsify
+    current_dir = os.getcwd()
+    newpath = os.path.normpath(os.path.join(current_dir, "./TikToks"))
+    normalised_filename = os.path.normpath(os.path.join(newpath, filename))
+    return normalised_filename
 
 def setup(discord_bot):
     discord_bot.add_cog(VrchatAI(discord_bot))
