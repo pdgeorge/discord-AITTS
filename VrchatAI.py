@@ -43,6 +43,7 @@ transcribed_text_from_cb = ""
 CHEWBACCA_CHANCE = 100
 TIKTOK_TOKEN = os.getenv("TIKTOK_TOKEN")
 TIKTOK_VOICE = "en_us_stormtrooper"
+TIKTOK_VOICES = ["en_us_ghostface", "en_us_chewbacca", "en_us_c3po", "en_us_stitch", "en_us_stormtrooper", "en_us_rocket", "en_au_001", "en_au_002", "en_uk_001", "en_uk_003", "en_us_001", "en_us_002", "en_us_006", "en_us_007", "en_us_009", "en_us_010", "fr_001", "fr_002", "de_001", "de_002", "es_002", "es_mx_002", "br_001", "br_003", "br_004", "br_005", "id_001", "jp_001", "jp_003", "jp_005", "jp_006", "kr_002", "kr_003", "kr_004"]
 
 def wink(bot):
     keyboard.press("left shift")
@@ -109,6 +110,8 @@ class VrchatAI(commands.Cog):
         self.vrchat_bot = OpenAI_Bot(bot_name, system_message, voice=voice)
         self.looping = False
         self.aitts = False
+        self.chewbacca_chance = CHEWBACCA_CHANCE
+        self.tttts_voice = TIKTOK_VOICE
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -137,6 +140,7 @@ class VrchatAI(commands.Cog):
 
     # Command to make the bot join a voice channel
     @commands.command(name="join")
+    @commands.has_role('Orange-People')
     async def join(self, ctx):
         self.aitts = False
         vc = None
@@ -150,6 +154,7 @@ class VrchatAI(commands.Cog):
 
     # Command to make the bot join a voice channel
     @commands.command(name="aijoin")
+    @commands.has_role('Orange-People')
     async def aijoin(self, ctx):
         self.aitts = True
         vc = None
@@ -270,6 +275,38 @@ class VrchatAI(commands.Cog):
             for item in data:
                 await ctx.channel.send(f'This persona is available: {item["bot_name"]}')
 
+    # List TikTokTTSVoices that can be used
+    @commands.command()
+    @commands.has_role('Orange-People')
+    async def voices(self, ctx: ApplicationContext):
+        await ctx.channel.send("0: en_us_ghostface\n1: en_us_chewbacca\n2: en_us_c3po\n3: en_us_stitch\n4: en_us_stormtrooper\n5: en_us_rocket\n\nEnglish Voices\n6: en_au_001\n7: en_au_002\n8: en_uk_001\n9: en_uk_003\n10: en_us_001\n11: en_us_002\n12: en_us_006\n13: en_us_007\n14: en_us_009\n15: en_us_010\n\nEuropean Voices\n16: fr_001\n17: fr_002\n18: de_001\n19: de_002\n20: es_002\n\nAmerican Voices\n21: es_mx_002\n22: br_001\n23: br_003\n24: br_004\n25: br_005\n\nAsia Voices\n26: id_001\n27: jp_001\n28: jp_003\n29: jp_005\n30: jp_006\n31: kr_002\n32: kr_003\n33: kr_004")
+
+    # Change the chance to use the chewbacca voice
+    @commands.command()
+    @commands.has_role('Orange-People')
+    async def voice(self, ctx: ApplicationContext, new_voice):
+        if new_voice.isdigit():
+            if int(new_voice) > 33:
+                await ctx.channel.send("The number you entered is larger than the potential voices. Please look at !voices again to see what options are available")
+            else:
+                self.tttts_voice = TIKTOK_VOICES[int(new_voice)]
+                await ctx.channel.send(f"Your new voice is {self.tttts_voice}")
+        elif new_voice in TIKTOK_VOICES:
+            self.tttts_voice = new_voice
+            await ctx.channel.send(f"The new voice is {self.tttts_voice}")
+        else:
+            await ctx.channel.send(f"{new_voice} is not in the list of voices. Please look at !voices again to see what options are available")
+
+    # Change the chance to use the chewbacca voice
+    @commands.command()
+    @commands.has_role('Orange-People')
+    async def chance(self, ctx: ApplicationContext, chance):
+        if chance.isdigit():
+            self.chewbacca_chance = int(chance)
+            await ctx.channel.send(f"The new chance is 1 in {self.chewbacca_chance}")
+        else:
+            await ctx.channel.send(f"{chance} is not a number. Please use a number.")
+
     # Send a message to Cyra to have her speak using TikTokTextToSpeach
     @commands.command(name="speak")
     @commands.has_role('Orange-People')
@@ -295,8 +332,8 @@ class VrchatAI(commands.Cog):
         tttts_filename = f"{self.vrchat_bot.bot_name}_{int(time.time())}"
         tttts_path = await path_for_tttts(tttts_filename)
 
-        tiktok_voice_to_use = TIKTOK_VOICE
-        if random.randint(1, CHEWBACCA_CHANCE) == 1:
+        tiktok_voice_to_use = self.tttts_voice
+        if random.randint(1, self.chewbacca_chance) == 1:
             tiktok_voice_to_use = "en_us_chewbacca"
 
         print(response)
@@ -311,6 +348,7 @@ class VrchatAI(commands.Cog):
         await asyncio.sleep(file_length)
         if os.path.exists(path_to_voice):
             os.remove(path_to_voice)
+            await asyncio.sleep(1)
             print(f"{path_to_voice} removed!")
         else:
             print(f"Something went wrong.")
