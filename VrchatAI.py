@@ -128,10 +128,8 @@ class VrchatAI(commands.Cog):
 
         if (vc.channel.name == message.channel.name) and not (message.content[0] == "!"):
             if self.aitts:
-                print("kool")
                 await self.aispeak(ctx, to_speak = message.content)
             elif self.aitts == False:
-                print("not kool")
                 await self.speak(ctx, to_speak = message.content)
 
         # # React to the message by adding a reaction
@@ -200,6 +198,14 @@ class VrchatAI(commands.Cog):
     async def stop(self, ctx: ApplicationContext):
         self.looping = False
         await ctx.channel.send("Stopping looping")
+
+    # Ask the AI a single question and have it respond with AI-TTS
+    @commands.command()
+    @commands.has_role("Cyra-chatter")
+    async def ask(self, ctx: ApplicationContext, *, to_ask):
+        response = await self.vrchat_bot.send_msg(to_ask)
+        await ctx.channel.send(f"Response was: {response}")
+        await self.aispeak(ctx, to_speak = response)
 
     # Starts the AI talking and speaking loop
     @commands.command()
@@ -284,10 +290,14 @@ class VrchatAI(commands.Cog):
                 with open('vrchat_ai.json', 'w+') as json_file:
                     json.dump(persona_data, json_file, indent=2)
                     await ctx.channel.send(f"Successfully loaded {persona}")
-                    self.bot_name = data["bot_name"]
-                    self.system_message = data["system_message"]
-                    self.wake_up_message = data["wake_up_message"]
-                    self.voice = data["voice"]
+                    self.vrchat_bot = None
+                    print(persona_data)
+                    print(type(persona_data))
+                    bot_name = persona_data["bot_name"]
+                    system_message = persona_data["system_message"]
+                    voice = persona_data["voice"]
+                    self.vrchat_bot = OpenAI_Bot(bot_name, system_message, voice)
+                    await ctx.channel.send(f"Successfully reloaded {self.vrchat_bot.bot_name}")
             else:
                 await ctx.channel.send(f"Unable to load {persona} please use !checkPersona to check Personas")
 
@@ -387,7 +397,6 @@ class VrchatAI(commands.Cog):
     @commands.command(name="aispeak")
     @commands.has_role("Cyra-chatter")
     async def aispeak(self, ctx: ApplicationContext, *, to_speak):
-        self.looping = True
         global transcribed_text_from_cb
         channel = ctx.channel
         voice = ctx.author.voice
@@ -399,18 +408,12 @@ class VrchatAI(commands.Cog):
             vc = await voice.channel.connect()
         else:
             vc = ctx.voice_client
-        print(ctx.voice_client)
         self.discord_bot.connections.update({ctx.guild.id: vc})
         
         response = to_speak
 
         # Generates audio file, then speaks the audio file through Discord channel
-
         aitts_path, aitts_length = await self.vrchat_bot.playHT_wav_generator(response)
-
-        # Use this for testing to not waste money:
-        # path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
-
 
         source = FFmpegPCMAudio(aitts_path)
         player = vc.play(source)
