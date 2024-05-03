@@ -244,6 +244,12 @@ class OpenAI_Bot():
         
         opus_duration = mp3_file.duration_seconds
         
+        if os.path.exists(path_to_start):
+            os.remove(path_to_start)
+            print(f"{path_to_start} removed!")
+        else:
+            print(f"Something went wrong.")
+
         return opus_file_path, opus_duration
 
     def turn_to_opus(self, path_to_mp3ify):
@@ -275,9 +281,16 @@ class OpenAI_Bot():
                     continue
                 omega_chunk += chunk
             filename = "_Msg" + str(hash(omega_chunk)) + ".wav"
-            filepath = self.turn_to_wav(wavify=omega_chunk, name=filename)
-            print("Received from wav, turning to opus: " + filepath)
-            filepath, file_length = self.turn_to_opus(filepath)
+            wav_filepath = self.turn_to_wav(wavify=omega_chunk, name=filename)
+            print("Received from wav, turning to opus: " + wav_filepath)
+            filepath, file_length = self.turn_to_opus(wav_filepath)
+            
+            if os.path.exists(wav_filepath):
+                os.remove(wav_filepath)
+                print(f"{wav_filepath} removed!")
+            else:
+                print("Something went wrong.")
+            
             print("Received from opus: " + filepath)
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
