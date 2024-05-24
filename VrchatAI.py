@@ -363,7 +363,10 @@ class VrchatAI(commands.Cog):
             vc = await voice.channel.connect()
         else:
             vc = ctx.voice_client
+            
+        print("ctx.voice_client:")
         print(ctx.voice_client)
+        
         self.discord_bot.connections.update({ctx.guild.id: vc})
         
         response = to_speak
@@ -376,13 +379,13 @@ class VrchatAI(commands.Cog):
         if random.randint(1, self.chewbacca_chance) == 1:
             tiktok_voice_to_use = "en_us_chewbacca"
 
-        print(response)
+        print("response: " + response)
 
         path_to_voice, file_length = await self.vrchat_bot.tttts(TIKTOK_TOKEN, tiktok_voice_to_use, response, tttts_path)
         # Use this for testing to not waste money:
         # path, file_length = "./outputs\\tester\\_Msg589158584504913860.opus", 9
-        print(path_to_voice)
-        print(file_length)
+        print("path_to_voice: " + path_to_voice)
+        print("file_length: " + str(file_length))
         source = FFmpegPCMAudio(path_to_voice)
         player = vc.play(source)
         await asyncio.sleep(file_length)
