@@ -11,6 +11,7 @@ import time
 from pydub import AudioSegment
 import speech_recognition as sr
 import random
+import re
 
 # VRChat emotion -> Hotkey to use
 # *happy* -> shift+f1 (default)
@@ -90,6 +91,15 @@ def action_stripper(msg, bot):
             functions_to_call.append(mood_lambda)
         msg_lower = msg_lower.replace(word.lower(), "")
     return msg_lower, functions_to_call
+
+def filter(message):
+    filtered_msg = message
+    
+    message = re.sub('(\<.?\:)|(\:\d+\>)', "", message)
+    message = re.sub('https?\:\/\/(\w+\.)?\w+\.\w+\/.+', "A link!", message)
+    filtered_msg = message
+    
+    return filtered_msg
 
 class VrchatAI(commands.Cog):
     def __init__(self, discord_bot):
@@ -369,6 +379,8 @@ class VrchatAI(commands.Cog):
         
         self.discord_bot.connections.update({ctx.guild.id: vc})
         
+        to_speak = filter(to_speak)
+        
         response = to_speak
 
         # Generates audio file, then speaks the audio file through Discord channel
@@ -412,6 +424,8 @@ class VrchatAI(commands.Cog):
         else:
             vc = ctx.voice_client
         self.discord_bot.connections.update({ctx.guild.id: vc})
+        
+        to_speak = filter(to_speak)
         
         response = to_speak
 
