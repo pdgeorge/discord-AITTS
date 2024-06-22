@@ -58,7 +58,6 @@ def normalise_dir(dir):
 async def speech_listener_async(listen_for):
     r = sr.Recognizer()
     transcription = "Not yet"
-    error_checker = True
     with sr.Microphone() as source:
         print("Recording started")
         try:

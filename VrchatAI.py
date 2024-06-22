@@ -31,6 +31,7 @@ import re
 # ^^ !DONE! ^^
 # TODO: Add protections to only allow certain people to use commands
 # ^^ !DONE! ^^ "Orange-People" role
+
 # TODO: Place system_message and wake_up_message into external file
 # QUESTION: Does the play.ht manifest path need to be an init param?
 # Answer: Yes !DONE!
@@ -120,6 +121,8 @@ class VrchatAI(commands.Cog):
         self.vrchat_bot = OpenAI_Bot(bot_name, system_message, voice=voice)
         self.looping = False
         self.aitts = False
+        self.gtts = False
+        self.tttts = False
         self.chewbacca_chance = CHEWBACCA_CHANCE
         self.tttts_voice = TIKTOK_VOICE
 
@@ -139,8 +142,10 @@ class VrchatAI(commands.Cog):
         if (vc.channel.name == message.channel.name) and not (message.content[0] == "!"):
             if self.aitts:
                 await self.aispeak(ctx, to_speak = message.content)
-            elif self.aitts == False:
+            elif self.tttts:
                 await self.speak(ctx, to_speak = message.content)
+            elif self.gtts:
+                await self.gttsspeak(ctx, to_speak = message.content)
 
         # # React to the message by adding a reaction
         # await message.add_reaction("👍")  # You can replace "👍" with any emoji you like
@@ -151,6 +156,8 @@ class VrchatAI(commands.Cog):
     @commands.has_role("Cyra-chatter")
     async def join(self, ctx):
         self.aitts = False
+        self.gtts = True
+        self.tttts = False
         vc = None
         if not ctx.author.voice:
             return await ctx.channel.send("You are not in a vc right now")
@@ -183,9 +190,28 @@ class VrchatAI(commands.Cog):
 
     # Command to make the bot join a voice channel
     @commands.command(name="aijoin")
-    @commands.has_role("Cyra-chatter")
+    @commands.has_role("TheGuyInChargeIGuess")
     async def aijoin(self, ctx):
         self.aitts = True
+        self.gtts = False
+        self.tttts = False
+        vc = None
+
+        if not ctx.author.voice:
+            return await ctx.channel.send("You're not in a vc right now")
+        if not ctx.voice_client:
+            vc = await ctx.author.voice.channel.connect()
+        else:
+            vc = ctx.voice_client
+        self.discord_bot.connections.update({ctx.guild.id: vc})
+
+    # Command to make the bot join a voice channel
+    @commands.command(name="ttttsjoin")
+    @commands.has_role("Cyra-chatter")
+    async def aijoin(self, ctx):
+        self.aitts = False
+        self.gtts = False
+        self.tttts = True
         vc = None
 
         if not ctx.author.voice:
@@ -215,7 +241,10 @@ class VrchatAI(commands.Cog):
     async def ask(self, ctx: ApplicationContext, *, to_ask):
         response = await self.vrchat_bot.send_msg(to_ask)
         await ctx.channel.send(f"Response was: {response}")
-        await self.aispeak(ctx, to_speak = response)
+        if self.aitts:
+            await self.aispeak(ctx, to_speak = response)
+        elif self.aitts == False:
+            await self.speak(ctx, to_speak = response)
 
     # Starts the AI talking and speaking loop
     @commands.command()
@@ -407,6 +436,39 @@ class VrchatAI(commands.Cog):
             print(f"{path_to_voice} removed!")
         else:
             print(f"Something went wrong.")
+
+    @commands.command(name="gttsspeak")
+    @commands.has_role("Cyra-chatter")
+    async def gttsspeak(self, ctx: ApplicationContext, *, to_speak):
+        channel = ctx.channel
+        voice = ctx.author.voice
+        vc = None
+        
+        if not voice:
+            return await channel.send("You're not in a vc right now")
+        if not ctx.voice_client:
+            vc = await voice.channel.connect()
+        else:
+            vc = ctx.voice_client
+            
+        print("ctx.voice_client:")
+        print(ctx.voice_client)
+        
+        self.discord_bot.connections.update({ctx.guild.id: vc})
+
+        to_speak = filter(to_speak)
+        
+        response = to_speak
+        
+        gtts_path, gtts_duration = self.vrchat_bot.create_voice(response)
+        
+        source = FFmpegPCMAudio(gtts_path)
+        player = vc.play(source)
+        await asyncio.sleep(gtts_duration)
+        if os.path.exists(gtts_path):
+            os.remove(gtts_path)
+            print(f"{gtts_path} removed!")
+        else: print(f"Something went wrong.")
 
     # Send a message to Cyra to have her speak using TikTokTextToSpeach
     @commands.command(name="aispeak")
