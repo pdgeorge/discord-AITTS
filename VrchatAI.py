@@ -12,6 +12,9 @@ from pydub import AudioSegment
 import speech_recognition as sr
 import random
 import re
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # VRChat emotion -> Hotkey to use
 # *happy* -> shift+f1 (default)
@@ -190,7 +193,7 @@ class VrchatAI(commands.Cog):
 
     # Command to make the bot join a voice channel
     @commands.command(name="aijoin")
-    @commands.has_role("TheGuyInChargeIGuess")
+    @commands.has_role("Cyra-chatter")
     async def aijoin(self, ctx):
         self.aitts = True
         self.gtts = False
@@ -208,7 +211,7 @@ class VrchatAI(commands.Cog):
     # Command to make the bot join a voice channel
     @commands.command(name="ttttsjoin")
     @commands.has_role("Cyra-chatter")
-    async def aijoin(self, ctx):
+    async def ttttsjoin(self, ctx):
         self.aitts = False
         self.gtts = False
         self.tttts = True
@@ -558,3 +561,6 @@ async def path_for_tttts(path_to_ttttsify):
 
 def setup(discord_bot):
     discord_bot.add_cog(VrchatAI(discord_bot))
+    
+if __name__ == "__main__":
+    print("Ok it loaded")
