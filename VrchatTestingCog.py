@@ -10,6 +10,9 @@ import speech_recognition as sr
 import os
 import time
 import random
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # For testing the main runner.
 LISTEN_FOR = 30

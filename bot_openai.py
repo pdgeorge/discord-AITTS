@@ -16,6 +16,9 @@ import time
 import math
 import requests
 import base64
+from dotenv import load_dotenv
+
+load_dotenv()
 
 TEXT_DIR = "./"
 TTS_DIR = "./outputs/"
