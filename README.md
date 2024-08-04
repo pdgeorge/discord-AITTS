@@ -18,9 +18,13 @@ python3 -m pip install -U "py-cord[voice]"
 # create a .env file with your API keys for the following:
 
 CYRA_DISCORD=
+
 OPENAI_API_KEY=
+
 PLAY_HT_USER_ID=
+
 PLAY_HT_API_KEY=
+
 TIKTOK_TOKEN=
 
 CYRA_DISCORD is your Discord bot's API Token
