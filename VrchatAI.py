@@ -5,7 +5,6 @@ from bot_openai import OpenAI_Bot
 import os
 import discord
 from discord import FFmpegPCMAudio
-from discord.commands import ApplicationContext
 from discord.ext import commands
 import time
 from pydub import AudioSegment
@@ -234,14 +233,14 @@ class VrchatAI(commands.Cog):
     # Stops the AI looping and communicating.
     @commands.command()
     @commands.has_role("Cyra-chatter")
-    async def stop(self, ctx: ApplicationContext):
+    async def stop(self, ctx):
         self.looping = False
         await ctx.channel.send("Stopping looping")
 
     # Ask the AI a single question and have it respond with AI-TTS
     @commands.command()
     @commands.has_role("Cyra-chatter")
-    async def ask(self, ctx: ApplicationContext, *, to_ask):
+    async def ask(self, ctx, *, to_ask):
         response = await self.vrchat_bot.send_msg(to_ask)
         await ctx.channel.send(f"Response was: {response}")
         if self.aitts:
@@ -252,7 +251,7 @@ class VrchatAI(commands.Cog):
     # Starts the AI talking and speaking loop
     @commands.command()
     @commands.has_role("Cyra-chatter")
-    async def start(self, ctx: ApplicationContext):
+    async def start(self, ctx):
         self.looping = True
         global transcribed_text_from_cb
         
@@ -357,13 +356,13 @@ class VrchatAI(commands.Cog):
     # List TikTokTTSVoices that can be used
     @commands.command()
     @commands.has_role("Cyra-chatter")
-    async def voices(self, ctx: ApplicationContext):
+    async def voices(self, ctx):
         await ctx.channel.send("0: en_us_ghostface\n1: en_us_chewbacca\n2: en_us_c3po\n3: en_us_stitch\n4: en_us_stormtrooper\n5: en_us_rocket\n\nEnglish Voices\n6: en_au_001\n7: en_au_002\n8: en_uk_001\n9: en_uk_003\n10: en_us_001\n11: en_us_002\n12: en_us_006\n13: en_us_007\n14: en_us_009\n15: en_us_010\n\nEuropean Voices\n16: fr_001\n17: fr_002\n18: de_001\n19: de_002\n20: es_002\n\nAmerican Voices\n21: es_mx_002\n22: br_001\n23: br_003\n24: br_004\n25: br_005\n\nAsia Voices\n26: id_001\n27: jp_001\n28: jp_003\n29: jp_005\n30: jp_006\n31: kr_002\n32: kr_003\n33: kr_004")
 
     # Change the chance to use the chewbacca voice
     @commands.command()
     @commands.has_role("Cyra-chatter")
-    async def voice(self, ctx: ApplicationContext, new_voice=None):
+    async def voice(self, ctx, new_voice=None):
         print(new_voice)
         if new_voice == None:
             await ctx.channel.send(f"The current voice is {self.tttts_voice}")
@@ -382,7 +381,7 @@ class VrchatAI(commands.Cog):
     # Change the chance to use the chewbacca voice
     @commands.command()
     @commands.has_role("Cyra-chatter")
-    async def chance(self, ctx: ApplicationContext, chance):
+    async def chance(self, ctx, chance):
         if chance.isdigit():
             self.chewbacca_chance = int(chance)
             await ctx.channel.send(f"The new chance is 1 in {self.chewbacca_chance}")
@@ -392,7 +391,7 @@ class VrchatAI(commands.Cog):
     # Send a message to Cyra to have her speak using TikTokTextToSpeach
     @commands.command(name="speak")
     @commands.has_role("Cyra-chatter")
-    async def speak(self, ctx: ApplicationContext, *, to_speak):
+    async def speak(self, ctx, *, to_speak):
         self.looping = True
         global transcribed_text_from_cb
         channel = ctx.channel
@@ -442,7 +441,7 @@ class VrchatAI(commands.Cog):
 
     @commands.command(name="gttsspeak")
     @commands.has_role("Cyra-chatter")
-    async def gttsspeak(self, ctx: ApplicationContext, *, to_speak):
+    async def gttsspeak(self, ctx, *, to_speak):
         channel = ctx.channel
         voice = ctx.author.voice
         vc = None
@@ -476,7 +475,7 @@ class VrchatAI(commands.Cog):
     # Send a message to Cyra to have her speak using TikTokTextToSpeach
     @commands.command(name="aispeak")
     @commands.has_role("Cyra-chatter")
-    async def aispeak(self, ctx: ApplicationContext, *, to_speak):
+    async def aispeak(self, ctx, *, to_speak):
         global transcribed_text_from_cb
         channel = ctx.channel
         voice = ctx.author.voice
@@ -559,8 +558,8 @@ async def path_for_tttts(path_to_ttttsify):
     normalised_filename = os.path.normpath(os.path.join(newpath, filename))
     return normalised_filename
 
-def setup(discord_bot):
-    discord_bot.add_cog(VrchatAI(discord_bot))
+async def setup(discord_bot):
+    await discord_bot.add_cog(VrchatAI(discord_bot))
     
 if __name__ == "__main__":
     print("Ok it loaded")
