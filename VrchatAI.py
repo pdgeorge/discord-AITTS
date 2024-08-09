@@ -554,7 +554,7 @@ async def mp3_to_wav(path):
 async def path_for_tttts(path_to_ttttsify):
     filename = path_to_ttttsify
     current_dir = os.getcwd()
-    newpath = os.path.normpath(os.path.join(current_dir, "./TikToks"))
+    newpath = os.path.normpath(os.path.join(current_dir, "./outputs"))
     normalised_filename = os.path.normpath(os.path.join(newpath, filename))
     return normalised_filename
 
