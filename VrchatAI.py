@@ -558,8 +558,8 @@ async def path_for_tttts(path_to_ttttsify):
     normalised_filename = os.path.normpath(os.path.join(newpath, filename))
     return normalised_filename
 
-def setup(discord_bot):
-    discord_bot.add_cog(VrchatAI(discord_bot))
+async def setup(discord_bot):
+    await discord_bot.add_cog(VrchatAI(discord_bot))
     
 if __name__ == "__main__":
     print("Ok it loaded")
