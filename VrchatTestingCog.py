@@ -3,7 +3,6 @@ import discord
 from bot_openai import OpenAI_Bot
 from discord import FFmpegPCMAudio
 from discord.ext import commands
-from discord.commands import ApplicationContext
 import VrchatAI
 from pydub import AudioSegment
 import speech_recognition as sr
@@ -65,7 +64,7 @@ class VrchatTestingCog(commands.Cog):
     # Test the ability to talk with Cyra, using a generic TTS
     @commands.command(name="teststart")
     @commands.has_role('Orange-People')
-    async def teststart(self, ctx: ApplicationContext):
+    async def teststart(self, ctx):
         self.looping = True
         global transcribed_text_from_cb
         channel = ctx.channel
@@ -146,7 +145,7 @@ class VrchatTestingCog(commands.Cog):
     # Stop the test
     @commands.command()
     @commands.has_role('Orange-People')
-    async def teststop(self, ctx: ApplicationContext):
+    async def teststop(self, ctx):
         self.looping = False
         await ctx.channel.send("Stopping looping")
 

@@ -1,6 +1,7 @@
 # Beginnings of a base wrapper for main runner
 import discord
 import os
+import asyncio
 from discord.ext import commands
 from dotenv import load_dotenv
 
@@ -22,7 +23,11 @@ async def ping(ctx):
     print(f"Bot command prefix: {ctx.prefix}")
     await ctx.channel.send("pong")
 
-discord_bot.load_extension("VrchatTestingCog")
-discord_bot.load_extension("VrchatAI")
+async def main():
+    async with discord_bot:
+        await discord_bot.load_extension("VrchatTestingCog")
+        await discord_bot.load_extension("VrchatAI")
+        await discord_bot.start(DISCORD_TOKEN)
 
-discord_bot.run(DISCORD_TOKEN)
+if __name__ == "__main__":
+    asyncio.run(main())
