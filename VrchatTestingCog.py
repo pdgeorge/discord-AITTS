@@ -1,8 +1,9 @@
-import discord
 import asyncio
+import discord
 from bot_openai import OpenAI_Bot
 from discord import FFmpegPCMAudio
 from discord.ext import commands
+from discord.commands import ApplicationContext
 import VrchatAI
 from pydub import AudioSegment
 import speech_recognition as sr
@@ -23,7 +24,6 @@ TIKTOK_TOKEN = os.getenv("TIKTOK_TOKEN")
 TIKTOK_VOICE = "en_us_stormtrooper"
 
 transcribed_text_from_cb = ""
-
 
 async def actions_tester(bot):
     await asyncio.sleep(5)
@@ -56,7 +56,6 @@ async def actions_tester(bot):
     print(response)
     VrchatAI.action_looper(actions)
 
-
 class VrchatTestingCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -66,7 +65,7 @@ class VrchatTestingCog(commands.Cog):
     # Test the ability to talk with Cyra, using a generic TTS
     @commands.command(name="teststart")
     @commands.has_role('Orange-People')
-    async def teststart(self, ctx):
+    async def teststart(self, ctx: ApplicationContext):
         self.looping = True
         global transcribed_text_from_cb
         channel = ctx.channel
@@ -80,7 +79,7 @@ class VrchatTestingCog(commands.Cog):
             vc = ctx.voice_client
 
         to_send = WAKE_UP_MESSAGE
-
+        
         # Generates the text from bot
         response = await self.tai_bot.send_msg(to_send)
 
@@ -121,8 +120,8 @@ class VrchatTestingCog(commands.Cog):
             await asyncio.sleep(1)
 
             to_send = transcribed_text_from_cb
-            print("ttfcb: " + transcribed_text_from_cb)
-            print("t_s: " + to_send)
+            print("ttfcb: "+transcribed_text_from_cb)
+            print("t_s: "+to_send)
             response = await self.tai_bot.send_msg(to_send)
             response, actions = VrchatAI.action_stripper(msg=response, bot=self.tai_bot)
             print("response: " + response)
@@ -134,9 +133,8 @@ class VrchatTestingCog(commands.Cog):
             if random.randint(1, CHEWBACCA_CHANCE) == 1:
                 tiktok_voice_to_use = "en_us_chewbacca"
 
-            path_to_voice, file_length = await self.tai_bot.tttts(TIKTOK_TOKEN, tiktok_voice_to_use, response,
-                                                                  tttts_path)
-
+            path_to_voice, file_length = await self.tai_bot.tttts(TIKTOK_TOKEN, tiktok_voice_to_use, response, tttts_path)
+            
             print(path_to_voice)
             print(file_length)
             VrchatAI.action_looper(actions)
@@ -144,14 +142,13 @@ class VrchatTestingCog(commands.Cog):
             player = vc.play(source)
             await asyncio.sleep(file_length)
             source.cleanup()
-
+    
     # Stop the test
     @commands.command()
     @commands.has_role('Orange-People')
-    async def teststop(self, ctx):
+    async def teststop(self, ctx: ApplicationContext):
         self.looping = False
         await ctx.channel.send("Stopping looping")
-
 
 async def finished_callback(sink, channel: discord.TextChannel, *args):
     global transcribed_text_from_cb
@@ -167,14 +164,13 @@ async def finished_callback(sink, channel: discord.TextChannel, *args):
             await asyncio.sleep(0.5)
         file_path = await mp3_to_wav(file_path)
         transcribed_text_from_cb = await transcribe_audio(file_path, channel, user_id)
-        print("ttfcb in f_c: " + transcribed_text_from_cb)
+        print("ttfcb in f_c: "+transcribed_text_from_cb)
 
     # await channel.send(f"Finished! Recorded audio for {', '.join(recorded_users)}.", files=files)
     await channel.send(f"Finished! Recorded audio for {', '.join(recorded_users)}.")
 
-
 async def transcribe_audio(file_path, channel: discord.TextChannel, user_id):
-    print("t_a: " + file_path)
+    print("t_a: "+file_path)
     r = sr.Recognizer()
     with sr.AudioFile(file_path) as source:
         audio = r.record(source)
@@ -184,19 +180,15 @@ async def transcribe_audio(file_path, channel: discord.TextChannel, user_id):
         print(f"Transcription for <@{user_id}>: {transcribed_text}")
         return transcribed_text
     except sr.UnknownValueError:
-        await channel.send(
-            f"Unable to transcribe audio for <@{user_id}>. Speech Recognition could not understand the audio.")
+        await channel.send(f"Unable to transcribe audio for <@{user_id}>. Speech Recognition could not understand the audio.")
     except sr.RequestError as e:
-        await channel.send(
-            f"Unable to transcribe audio for <@{user_id}>. Error with the Speech Recognition service: {e}")
-
+        await channel.send(f"Unable to transcribe audio for <@{user_id}>. Error with the Speech Recognition service: {e}")
 
 async def mp3_to_wav(path):
     sound = AudioSegment.from_mp3(path)
-    new_path = path + ".wav"
+    new_path = path+".wav"
     sound.export(new_path, format="wav")
     return new_path
-
 
 async def path_for_tttts(path_to_ttttsify):
     filename = path_to_ttttsify
@@ -205,6 +197,5 @@ async def path_for_tttts(path_to_ttttsify):
     normalised_filename = os.path.normpath(os.path.join(newpath, filename))
     return normalised_filename
 
-
-async def setup(discord_bot):
-    await discord_bot.add_cog(VrchatTestingCog(discord_bot))
+def setup(discord_bot):
+    discord_bot.add_cog(VrchatTestingCog(discord_bot))
